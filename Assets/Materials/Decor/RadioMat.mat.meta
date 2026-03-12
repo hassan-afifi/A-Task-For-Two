@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: a216f56dc1c1d0a43b7e22eda6a6c9c9
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 311457
+  packageName: Radio Game Asset
+  packageVersion: 1.0
+  assetPath: Assets/Assets/Radio/Materials/M_RadioP.mat
+  uploadId: 733777
