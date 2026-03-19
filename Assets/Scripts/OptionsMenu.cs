@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -9,30 +9,101 @@ using UnityEngine.UI;
 
 public class OptionsMenu : MonoBehaviour
 {
-    private const string DisplayModeKey = "opt_display_mode";
-    private const string ResolutionWidthKey = "opt_resolution_width";
-    private const string ResolutionHeightKey = "opt_resolution_height";
-    private const string QualityLevelKey = "opt_quality_level";
-    private const string CameraFovKey = "opt_camera_fov";
-    private const string CameraSensitivityPercentKey = "opt_camera_sensitivity_pct";
-    private const string MasterVolumeKey = "opt_master_volume";
-    private const string GameSfxVolumeKey = "opt_game_sfx_volume";
-    private const string MenuSfxVolumeKey = "opt_menu_sfx_volume";
-    private const string GameMusicVolumeKey = "opt_game_music_volume";
-    private const string MenuMusicVolumeKey = "opt_menu_music_volume";
-    private const string CrosshairSizeKey = "opt_crosshair_size";
-    private const string CrosshairColorKey = "opt_crosshair_color";
-    private const string ShowFpsKey = "opt_show_fps";
-    private const string ShowPingKey = "opt_show_ping";
-    private const string ShowSystemClockKey = "opt_show_system_clock";
-    private const int BorderlessModeOption = 1;
+    private enum PrefKey
+    {
+        DisplayMode,
+        ResolutionWidth,
+        ResolutionHeight,
+        QualityLevel,
+        CameraFov,
+        SensPct,
+        MasterVolume,
+        GameSfx,
+        MenuSfx,
+        GameMusic,
+        MenuMusic,
+        CrosshairSize,
+        CrosshairColor,
+        ShowFps,
+        ShowPing,
+        ShowClock,
+        VolumeInit
+    }
+
+    private enum ModeOption
+    {
+        Windowed = 0,
+        Borderless = 1,
+        Fullscreen = 2
+    }
+
+    private enum MixerParam
+    {
+        Master,
+        GameSfx,
+        MenuSfx,
+        GameMusic,
+        MenuMusic
+    }
+
+    private static readonly Dictionary<PrefKey, string> PrefNames = new Dictionary<PrefKey, string>
+    {
+        { PrefKey.DisplayMode, "opt_display_mode" },
+        { PrefKey.ResolutionWidth, "opt_resolution_width" },
+        { PrefKey.ResolutionHeight, "opt_resolution_height" },
+        { PrefKey.QualityLevel, "opt_quality_level" },
+        { PrefKey.CameraFov, "opt_camera_fov" },
+        { PrefKey.SensPct, "opt_camera_sensitivity_pct" },
+        { PrefKey.MasterVolume, "opt_master_volume" },
+        { PrefKey.GameSfx, "opt_game_sfx_volume" },
+        { PrefKey.MenuSfx, "opt_menu_sfx_volume" },
+        { PrefKey.GameMusic, "opt_game_music_volume" },
+        { PrefKey.MenuMusic, "opt_menu_music_volume" },
+        { PrefKey.CrosshairSize, "opt_crosshair_size" },
+        { PrefKey.CrosshairColor, "opt_crosshair_color" },
+        { PrefKey.ShowFps, "opt_show_fps" },
+        { PrefKey.ShowPing, "opt_show_ping" },
+        { PrefKey.ShowClock, "opt_show_system_clock" },
+        { PrefKey.VolumeInit, "opt_volume_defaults_initialized_v1" }
+    };
+
+    private static string Pref(PrefKey key)
+    {
+        return PrefNames[key];
+    }
+
+    private static int PrefGetInt(PrefKey key, int defaultValue = 0)
+    {
+        return PlayerPrefs.GetInt(Pref(key), defaultValue);
+    }
+
+    private static void PrefSetInt(PrefKey key, int value)
+    {
+        PlayerPrefs.SetInt(Pref(key), value);
+    }
+
+    private static float PrefGetFloat(PrefKey key, float defaultValue = 0f)
+    {
+        return PlayerPrefs.GetFloat(Pref(key), defaultValue);
+    }
+
+    private static void PrefSetFloat(PrefKey key, float value)
+    {
+        PlayerPrefs.SetFloat(Pref(key), value);
+    }
+
+    private static bool PrefHasKey(PrefKey key)
+    {
+        return PlayerPrefs.HasKey(Pref(key));
+    }
+
     private const int BestResolutionIndex = 0;
-    private const int DefaultHudWidgetVisible = 1;
-    private const float MinCrosshairSliderValue = 1f;
-    private const float DefaultCrosshairSliderValue = 1f;
-    private const float MaxCrosshairSliderValue = 10f;
-    private const float MinCrosshairPixelSize = 5f;
-    private const float MaxCrosshairPixelSize = 50f;
+    private const int DefaultHudOn = 1;
+    private const float MinCrosshairSize = 1f;
+    private const float DefaultCrosshairVal = 1f;
+    private const float MaxCrosshairSize = 10f;
+    private const float MinCrosshairPx = 5f;
+    private const float MaxCrosshairPx = 50f;
 
     private const float MinFov = 60f;
     private const float MaxFov = 100f;
@@ -41,7 +112,10 @@ public class OptionsMenu : MonoBehaviour
     private const float MinSensitivityPercent = 1f;
     private const float DefaultSensitivityPercent = 50f;
     private const float DefaultVolumePercent = 50f;
-    private const string VolumeDefaultsInitializedKey = "opt_volume_defaults_initialized_v1";
+    private const float FullscreenAspectTolerance = 0.01f;
+    private const float MinLinearVolume = 0.0001f;
+    private const float MuteDb = -80f;
+    private const string VolumeSuffix = "Volume";
 
     [Header("Video")]
     [SerializeField] private TMP_Dropdown displayModeDropdown;
@@ -51,17 +125,12 @@ public class OptionsMenu : MonoBehaviour
     [SerializeField] private Slider cameraSensitivitySlider;
 
     [Header("Audio")]
-    [SerializeField] private Slider masterVolumeSlider;
-    [SerializeField] private Slider gameSfxVolumeSlider;
-    [SerializeField] private Slider menuSfxVolumeSlider;
-    [SerializeField] private Slider gameMusicVolumeSlider;
-    [SerializeField] private Slider menuMusicVolumeSlider;
+    [SerializeField] private Slider masterVolSlider;
+    [SerializeField] private Slider gameSfxSlider;
+    [SerializeField] private Slider menuSfxSlider;
+    [SerializeField] private Slider gameMusicSlider;
+    [SerializeField] private Slider menuMusicSlider;
     [SerializeField] private AudioMixer audioMixer;
-    private const string masterVolumeParam = "MasterVolume";
-    private const string gameSfxVolumeParam = "GameSFXVolume";
-    private const string menuSfxVolumeParam = "MenuSFXVolume";
-    private const string gameMusicVolumeParam = "GameMusicVolume";
-    private const string menuMusicVolumeParam = "MenuMusicVolume";
 
     [Header("HUD")]
     [SerializeField] private Slider crosshairSizeSlider;
@@ -75,6 +144,10 @@ public class OptionsMenu : MonoBehaviour
     [SerializeField] private GameObject pingWidget;
     [SerializeField] private GameObject systemClockWidget;
 
+    [Header("External")]
+    [SerializeField] private PauseMenu pauseMenuRef;
+    [SerializeField] private MainMenu mainMenuRef;
+
     [Serializable]
     public class Tab
     {
@@ -86,16 +159,18 @@ public class OptionsMenu : MonoBehaviour
     [Header("Tabs")]
     [SerializeField] private Tab[] tabs = Array.Empty<Tab>();
     [SerializeField] private int defaultTabIndex;
-    [SerializeField] private Color activeTextColor = new Color32(51, 51, 51, 255);
-    [SerializeField] private Color inactiveTextColor = new Color32(200, 150, 50, 255);
+    private Color activeTextColor = new Color32(51, 51, 51, 255);
+    private Color inactiveTextColor = new Color32(200, 150, 50, 255);
 
     private UnityAction[] tabClickHandlers;
     private bool tabsRegistered;
     private InputActions input;
 
+    private readonly List<Vector2Int> allResList = new List<Vector2Int>();
     private readonly List<Vector2Int> resList = new List<Vector2Int>();
-    private int currentDisplayModeOption = BorderlessModeOption;
-    private int lastManualResolutionIndex;
+    private ModeOption displayModeOption = ModeOption.Borderless;
+    private int manualResIndex;
+    private PlayerMovement ownerPlayer;
 
     private static readonly Color[] CrossCols =
     {
@@ -113,17 +188,26 @@ public class OptionsMenu : MonoBehaviour
 
     void Awake()
     {
-        EnsureVolumeDefaults();
+        if (!Application.isPlaying)
+        {
+            return;
+        }
 
+        EnsureVolumeDefaults();
+        CacheRefs();
         PopulateResolutionDropdown();
         PopulateQualityDropdown();
         EnableDropdownHelpers();
-        LoadFromPreferencesAndApply();
-        RegisterListeners();
+        LoadPrefs();
     }
 
     void OnEnable()
     {
+        if (!Application.isPlaying)
+        {
+            return;
+        }
+
         if (input == null)
         {
             input = new InputActions();
@@ -137,6 +221,11 @@ public class OptionsMenu : MonoBehaviour
 
     void OnDisable()
     {
+        if (!Application.isPlaying)
+        {
+            return;
+        }
+
         if (input != null)
         {
             input.System.Pause.performed -= OnPauseInput;
@@ -148,7 +237,11 @@ public class OptionsMenu : MonoBehaviour
 
     void OnDestroy()
     {
-        UnregisterListeners();
+        if (!Application.isPlaying)
+        {
+            return;
+        }
+
     }
 
     public static float SensMap(float percent)
@@ -161,179 +254,32 @@ public class OptionsMenu : MonoBehaviour
     public static float SavedFov(float fallback)
     {
         float defaultValue = Mathf.Clamp(fallback, MinFov, MaxFov);
-        return Mathf.Clamp(PlayerPrefs.GetFloat(CameraFovKey, defaultValue), MinFov, MaxFov);
+        return Mathf.Clamp(PrefGetFloat(PrefKey.CameraFov, defaultValue), MinFov, MaxFov);
     }
 
     public static float SavedSensPct(float fallbackPercent)
     {
         float defaultValue = Mathf.Clamp(fallbackPercent, MinSensitivityPercent, 100f);
-        return Mathf.Clamp(PlayerPrefs.GetFloat(CameraSensitivityPercentKey, defaultValue), MinSensitivityPercent, 100f);
+        return Mathf.Clamp(PrefGetFloat(PrefKey.SensPct, defaultValue), MinSensitivityPercent, 100f);
     }
 
-    void RegisterListeners()
-    {
-        if (displayModeDropdown != null)
-        {
-            displayModeDropdown.onValueChanged.AddListener(OnDisplayModeChanged);
-        }
-
-        if (resolutionDropdown != null)
-        {
-            resolutionDropdown.onValueChanged.AddListener(OnResolutionChanged);
-        }
-
-        if (graphicsQualityDropdown != null)
-        {
-            graphicsQualityDropdown.onValueChanged.AddListener(OnQualityChanged);
-        }
-
-        if (cameraFovSlider != null)
-        {
-            cameraFovSlider.onValueChanged.AddListener(OnFovChanged);
-        }
-
-        if (cameraSensitivitySlider != null)
-        {
-            cameraSensitivitySlider.onValueChanged.AddListener(OnSensitivityChanged);
-        }
-
-        if (masterVolumeSlider != null)
-        {
-            masterVolumeSlider.onValueChanged.AddListener(OnMasterVolumeChanged);
-        }
-
-        if (gameSfxVolumeSlider != null)
-        {
-            gameSfxVolumeSlider.onValueChanged.AddListener(OnGameSfxVolumeChanged);
-        }
-
-        if (menuSfxVolumeSlider != null)
-        {
-            menuSfxVolumeSlider.onValueChanged.AddListener(OnMenuSfxVolumeChanged);
-        }
-
-        if (gameMusicVolumeSlider != null)
-        {
-            gameMusicVolumeSlider.onValueChanged.AddListener(OnGameMusicVolumeChanged);
-        }
-
-        if (menuMusicVolumeSlider != null)
-        {
-            menuMusicVolumeSlider.onValueChanged.AddListener(OnMenuMusicVolumeChanged);
-        }
-
-        if (crosshairSizeSlider != null)
-        {
-            crosshairSizeSlider.onValueChanged.AddListener(OnCrosshairSizeChanged);
-        }
-
-        if (crosshairColorDropdown != null)
-        {
-            crosshairColorDropdown.onValueChanged.AddListener(OnCrosshairColorChanged);
-        }
-
-        if (showFpsToggle != null)
-        {
-            showFpsToggle.onValueChanged.AddListener(OnShowFpsChanged);
-        }
-
-        if (showPingToggle != null)
-        {
-            showPingToggle.onValueChanged.AddListener(OnShowPingChanged);
-        }
-
-        if (showSystemClockToggle != null)
-        {
-            showSystemClockToggle.onValueChanged.AddListener(OnShowSystemClockChanged);
-        }
-    }
-
-    void UnregisterListeners()
-    {
-        if (displayModeDropdown != null)
-        {
-            displayModeDropdown.onValueChanged.RemoveListener(OnDisplayModeChanged);
-        }
-
-        if (resolutionDropdown != null)
-        {
-            resolutionDropdown.onValueChanged.RemoveListener(OnResolutionChanged);
-        }
-
-        if (graphicsQualityDropdown != null)
-        {
-            graphicsQualityDropdown.onValueChanged.RemoveListener(OnQualityChanged);
-        }
-
-        if (cameraFovSlider != null)
-        {
-            cameraFovSlider.onValueChanged.RemoveListener(OnFovChanged);
-        }
-
-        if (cameraSensitivitySlider != null)
-        {
-            cameraSensitivitySlider.onValueChanged.RemoveListener(OnSensitivityChanged);
-        }
-
-        if (masterVolumeSlider != null)
-        {
-            masterVolumeSlider.onValueChanged.RemoveListener(OnMasterVolumeChanged);
-        }
-
-        if (gameSfxVolumeSlider != null)
-        {
-            gameSfxVolumeSlider.onValueChanged.RemoveListener(OnGameSfxVolumeChanged);
-        }
-
-        if (menuSfxVolumeSlider != null)
-        {
-            menuSfxVolumeSlider.onValueChanged.RemoveListener(OnMenuSfxVolumeChanged);
-        }
-
-        if (gameMusicVolumeSlider != null)
-        {
-            gameMusicVolumeSlider.onValueChanged.RemoveListener(OnGameMusicVolumeChanged);
-        }
-
-        if (menuMusicVolumeSlider != null)
-        {
-            menuMusicVolumeSlider.onValueChanged.RemoveListener(OnMenuMusicVolumeChanged);
-        }
-
-        if (crosshairSizeSlider != null)
-        {
-            crosshairSizeSlider.onValueChanged.RemoveListener(OnCrosshairSizeChanged);
-        }
-
-        if (crosshairColorDropdown != null)
-        {
-            crosshairColorDropdown.onValueChanged.RemoveListener(OnCrosshairColorChanged);
-        }
-
-        if (showFpsToggle != null)
-        {
-            showFpsToggle.onValueChanged.RemoveListener(OnShowFpsChanged);
-        }
-
-        if (showPingToggle != null)
-        {
-            showPingToggle.onValueChanged.RemoveListener(OnShowPingChanged);
-        }
-
-        if (showSystemClockToggle != null)
-        {
-            showSystemClockToggle.onValueChanged.RemoveListener(OnShowSystemClockChanged);
-        }
-    }
+    public void OnQualityChanged(int value) => ApplyQualityOption(value, true);
+    public void OnCrosshairColorChanged(int value) => ApplyCrosshairColor(value, true);
+    public void OnFovChanged(float value) => ApplyCameraFov(value, true);
+    public void OnSensChanged(float value) => ApplyCameraSensitivity(value, true);
+    public void OnMasterVolChanged(float value) => ApplyVolume(value, MixerName(MixerParam.Master), PrefKey.MasterVolume, true, true);
+    public void OnGameSfxChanged(float value) => ApplyVolume(value, MixerName(MixerParam.GameSfx), PrefKey.GameSfx, true, false);
+    public void OnMenuSfxChanged(float value) => ApplyVolume(value, MixerName(MixerParam.MenuSfx), PrefKey.MenuSfx, true, false);
+    public void OnGameMusicChanged(float value) => ApplyVolume(value, MixerName(MixerParam.GameMusic), PrefKey.GameMusic, true, false);
+    public void OnMenuMusicChanged(float value) => ApplyVolume(value, MixerName(MixerParam.MenuMusic), PrefKey.MenuMusic, true, false);
+    public void OnCrosshairSizeChanged(float value) => ApplyCrosshairSize(value, true);
+    public void OnShowFpsChanged(bool value) => ApplyHudWidget(fpsWidget, value, PrefKey.ShowFps, true);
+    public void OnShowPingChanged(bool value) => ApplyHudWidget(pingWidget, value, PrefKey.ShowPing, true);
+    public void OnShowClockChanged(bool value) => ApplyHudWidget(systemClockWidget, value, PrefKey.ShowClock, true);
 
     void PopulateResolutionDropdown()
     {
-        if (resolutionDropdown == null)
-        {
-            return;
-        }
-
-        resList.Clear();
+        allResList.Clear();
 
         HashSet<long> seen = new HashSet<long>();
         Resolution[] resolutions = Screen.resolutions;
@@ -349,15 +295,15 @@ public class OptionsMenu : MonoBehaviour
                 continue;
             }
 
-            resList.Add(new Vector2Int(width, height));
+            allResList.Add(new Vector2Int(width, height));
         }
 
-        if (resList.Count == 0)
+        if (allResList.Count == 0)
         {
-            resList.Add(new Vector2Int(Screen.width, Screen.height));
+            allResList.Add(new Vector2Int(Screen.width, Screen.height));
         }
 
-        resList.Sort((a, b) =>
+        allResList.Sort((a, b) =>
         {
             long pixelsA = (long)a.x * a.y;
             long pixelsB = (long)b.x * b.y;
@@ -376,7 +322,50 @@ public class OptionsMenu : MonoBehaviour
             return b.y.CompareTo(a.y);
         });
 
+        RebuildResolutionList(GetModeOption());
+    }
+
+    void RebuildResolutionList(ModeOption displayModeOption)
+    {
+        resList.Clear();
+
+        if (IsFullscreenOption(displayModeOption))
+        {
+            Vector2Int screenRes = CurrentScreenResolution();
+            float screenAspect = Aspect(screenRes);
+
+            for (int i = 0; i < allResList.Count; i++)
+            {
+                Vector2Int current = allResList[i];
+
+                if (Mathf.Abs(Aspect(current) - screenAspect) <= FullscreenAspectTolerance)
+                {
+                    resList.Add(current);
+                }
+            }
+        }
+        else
+        {
+            resList.AddRange(allResList);
+        }
+
+        if (resList.Count == 0)
+        {
+            resList.AddRange(allResList);
+        }
+
+        RefreshResOptions();
+    }
+
+    void RefreshResOptions()
+    {
+        if (resolutionDropdown == null)
+        {
+            return;
+        }
+
         List<string> options = new List<string>(resList.Count);
+
         for (int i = 0; i < resList.Count; i++)
         {
             Vector2Int r = resList[i];
@@ -385,6 +374,23 @@ public class OptionsMenu : MonoBehaviour
 
         resolutionDropdown.ClearOptions();
         resolutionDropdown.AddOptions(options);
+    }
+
+    Vector2Int CurrentScreenResolution()
+    {
+        Resolution currentResolution = Screen.currentResolution;
+
+        if (currentResolution.width > 0 && currentResolution.height > 0)
+        {
+            return new Vector2Int(currentResolution.width, currentResolution.height);
+        }
+
+        return new Vector2Int(Mathf.Max(1, Screen.width), Mathf.Max(1, Screen.height));
+    }
+
+    float Aspect(Vector2Int resolution)
+    {
+        return resolution.y <= 0 ? 1f : (float)resolution.x / resolution.y;
     }
 
     void PopulateQualityDropdown()
@@ -511,50 +517,59 @@ public class OptionsMenu : MonoBehaviour
             return;
         }
 
-        PauseMenu pauseMenu = UnityEngine.Object.FindFirstObjectByType<PauseMenu>();
-
-        if (pauseMenu != null && PauseMenu.isOpen)
+        if (pauseMenuRef != null && PauseMenu.isOpen)
         {
             return;
         }
 
-        MainMenu mainMenu = UnityEngine.Object.FindFirstObjectByType<MainMenu>(FindObjectsInactive.Include);
-
-        if (mainMenu != null)
+        if (mainMenuRef != null)
         {
-            mainMenu.CloseOptions();
+            mainMenuRef.CloseOptions();
         }
     }
 
-    void LoadFromPreferencesAndApply()
+    void CacheRefs()
     {
-        int displayModeOption = PlayerPrefs.HasKey(DisplayModeKey)
-            ? PlayerPrefs.GetInt(DisplayModeKey)
-            : 1;
-        displayModeOption = Mathf.Clamp(displayModeOption, 0, 2);
-        currentDisplayModeOption = displayModeOption;
+        if (pauseMenuRef == null)
+        {
+            pauseMenuRef = UnityEngine.Object.FindFirstObjectByType<PauseMenu>(FindObjectsInactive.Include);
+        }
+
+        if (mainMenuRef == null)
+        {
+            mainMenuRef = UnityEngine.Object.FindFirstObjectByType<MainMenu>(FindObjectsInactive.Include);
+        }
+    }
+
+    void LoadPrefs()
+    {
+        int savedModeOption = PrefHasKey(PrefKey.DisplayMode)
+            ? PrefGetInt(PrefKey.DisplayMode)
+            : (int)ModeOption.Borderless;
+        displayModeOption = ClampModeOption(savedModeOption);
 
         if (displayModeDropdown != null)
         {
-            displayModeDropdown.SetValueWithoutNotify(displayModeOption);
+            displayModeDropdown.SetValueWithoutNotify((int)displayModeOption);
             displayModeDropdown.RefreshShownValue();
         }
 
         ApplyDisplayMode(displayModeOption, false);
+        RebuildResolutionList(displayModeOption);
 
-        int resolutionIndex = GetSavedResolutionIndex();
-        lastManualResolutionIndex = resolutionIndex;
+        int resolutionIndex = GetSavedResIndex();
+        manualResIndex = resolutionIndex;
         if (resolutionDropdown != null && resList.Count > 0)
         {
             resolutionDropdown.SetValueWithoutNotify(resolutionIndex);
             resolutionDropdown.RefreshShownValue();
         }
 
-        ApplyResolutionForMode(currentDisplayModeOption, wasBorderless: false);
+        ApplyResMode(displayModeOption, wasBorderless: false);
 
-        int savedQualityIndex = PlayerPrefs.GetInt(QualityLevelKey, QualitySettings.GetQualityLevel());
+        int savedQualityIndex = PrefGetInt(PrefKey.QualityLevel, QualitySettings.GetQualityLevel());
         savedQualityIndex = Mathf.Clamp(savedQualityIndex, 0, Mathf.Max(0, QualitySettings.names.Length - 1));
-        int qualityDropdownIndex = GetDropdownIndexForQuality(savedQualityIndex);
+        int qualityDropdownIndex = GetQualityDropdownIndex(savedQualityIndex);
 
         if (graphicsQualityDropdown != null)
         {
@@ -563,7 +578,7 @@ public class OptionsMenu : MonoBehaviour
             graphicsQualityDropdown.RefreshShownValue();
         }
 
-        ApplyQualityByDropdownIndex(qualityDropdownIndex, false);
+        ApplyQualityOption(qualityDropdownIndex, false);
 
         float fov = SavedFov(DefaultFov);
         if (cameraFovSlider != null)
@@ -584,61 +599,61 @@ public class OptionsMenu : MonoBehaviour
         }
         ApplyCameraSensitivity(sensitivityPercent, false);
 
-        float masterVolume = Mathf.Clamp(PlayerPrefs.GetFloat(MasterVolumeKey, DefaultVolumePercent), 0f, 100f);
-        if (masterVolumeSlider != null)
+        float masterVolume = Mathf.Clamp(PrefGetFloat(PrefKey.MasterVolume, DefaultVolumePercent), 0f, 100f);
+        if (masterVolSlider != null)
         {
-            masterVolumeSlider.minValue = 0f;
-            masterVolumeSlider.maxValue = 100f;
-            masterVolumeSlider.SetValueWithoutNotify(masterVolume);
+            masterVolSlider.minValue = 0f;
+            masterVolSlider.maxValue = 100f;
+            masterVolSlider.SetValueWithoutNotify(masterVolume);
         }
-        ApplyVolume(masterVolume, masterVolumeParam, MasterVolumeKey, false, true);
+        ApplyVolume(masterVolume, MixerName(MixerParam.Master), PrefKey.MasterVolume, false, true);
 
-        float gameSfxVolume = Mathf.Clamp(PlayerPrefs.GetFloat(GameSfxVolumeKey, DefaultVolumePercent), 0f, 100f);
-        if (gameSfxVolumeSlider != null)
+        float gameSfxVolume = Mathf.Clamp(PrefGetFloat(PrefKey.GameSfx, DefaultVolumePercent), 0f, 100f);
+        if (gameSfxSlider != null)
         {
-            gameSfxVolumeSlider.minValue = 0f;
-            gameSfxVolumeSlider.maxValue = 100f;
-            gameSfxVolumeSlider.SetValueWithoutNotify(gameSfxVolume);
+            gameSfxSlider.minValue = 0f;
+            gameSfxSlider.maxValue = 100f;
+            gameSfxSlider.SetValueWithoutNotify(gameSfxVolume);
         }
-        ApplyVolume(gameSfxVolume, gameSfxVolumeParam, GameSfxVolumeKey, false, false);
+        ApplyVolume(gameSfxVolume, MixerName(MixerParam.GameSfx), PrefKey.GameSfx, false, false);
 
-        float menuSfxVolume = Mathf.Clamp(PlayerPrefs.GetFloat(MenuSfxVolumeKey, DefaultVolumePercent), 0f, 100f);
-        if (menuSfxVolumeSlider != null)
+        float menuSfxVolume = Mathf.Clamp(PrefGetFloat(PrefKey.MenuSfx, DefaultVolumePercent), 0f, 100f);
+        if (menuSfxSlider != null)
         {
-            menuSfxVolumeSlider.minValue = 0f;
-            menuSfxVolumeSlider.maxValue = 100f;
-            menuSfxVolumeSlider.SetValueWithoutNotify(menuSfxVolume);
+            menuSfxSlider.minValue = 0f;
+            menuSfxSlider.maxValue = 100f;
+            menuSfxSlider.SetValueWithoutNotify(menuSfxVolume);
         }
-        ApplyVolume(menuSfxVolume, menuSfxVolumeParam, MenuSfxVolumeKey, false, false);
+        ApplyVolume(menuSfxVolume, MixerName(MixerParam.MenuSfx), PrefKey.MenuSfx, false, false);
 
-        float gameMusicVolume = Mathf.Clamp(PlayerPrefs.GetFloat(GameMusicVolumeKey, DefaultVolumePercent), 0f, 100f);
-        if (gameMusicVolumeSlider != null)
+        float gameMusicVolume = Mathf.Clamp(PrefGetFloat(PrefKey.GameMusic, DefaultVolumePercent), 0f, 100f);
+        if (gameMusicSlider != null)
         {
-            gameMusicVolumeSlider.minValue = 0f;
-            gameMusicVolumeSlider.maxValue = 100f;
-            gameMusicVolumeSlider.SetValueWithoutNotify(gameMusicVolume);
+            gameMusicSlider.minValue = 0f;
+            gameMusicSlider.maxValue = 100f;
+            gameMusicSlider.SetValueWithoutNotify(gameMusicVolume);
         }
-        ApplyVolume(gameMusicVolume, gameMusicVolumeParam, GameMusicVolumeKey, false, false);
+        ApplyVolume(gameMusicVolume, MixerName(MixerParam.GameMusic), PrefKey.GameMusic, false, false);
 
-        float menuMusicVolume = Mathf.Clamp(PlayerPrefs.GetFloat(MenuMusicVolumeKey, DefaultVolumePercent), 0f, 100f);
-        if (menuMusicVolumeSlider != null)
+        float menuMusicVolume = Mathf.Clamp(PrefGetFloat(PrefKey.MenuMusic, DefaultVolumePercent), 0f, 100f);
+        if (menuMusicSlider != null)
         {
-            menuMusicVolumeSlider.minValue = 0f;
-            menuMusicVolumeSlider.maxValue = 100f;
-            menuMusicVolumeSlider.SetValueWithoutNotify(menuMusicVolume);
+            menuMusicSlider.minValue = 0f;
+            menuMusicSlider.maxValue = 100f;
+            menuMusicSlider.SetValueWithoutNotify(menuMusicVolume);
         }
-        ApplyVolume(menuMusicVolume, menuMusicVolumeParam, MenuMusicVolumeKey, false, false);
+        ApplyVolume(menuMusicVolume, MixerName(MixerParam.MenuMusic), PrefKey.MenuMusic, false, false);
 
-        float crosshairSize = Mathf.Clamp(PlayerPrefs.GetFloat(CrosshairSizeKey, DefaultCrosshairSliderValue), MinCrosshairSliderValue, MaxCrosshairSliderValue);
+        float crosshairSize = Mathf.Clamp(PrefGetFloat(PrefKey.CrosshairSize, DefaultCrosshairVal), MinCrosshairSize, MaxCrosshairSize);
         if (crosshairSizeSlider != null)
         {
-            crosshairSizeSlider.minValue = MinCrosshairSliderValue;
-            crosshairSizeSlider.maxValue = MaxCrosshairSliderValue;
+            crosshairSizeSlider.minValue = MinCrosshairSize;
+            crosshairSizeSlider.maxValue = MaxCrosshairSize;
             crosshairSizeSlider.SetValueWithoutNotify(crosshairSize);
         }
         ApplyCrosshairSize(crosshairSize, false);
 
-        int crosshairColorIndex = Mathf.Clamp(PlayerPrefs.GetInt(CrosshairColorKey, 0), 0, CrossCols.Length - 1);
+        int crosshairColorIndex = Mathf.Clamp(PrefGetInt(PrefKey.CrosshairColor, 0), 0, CrossCols.Length - 1);
         if (crosshairColorDropdown != null)
         {
             crosshairColorDropdown.SetValueWithoutNotify(crosshairColorIndex);
@@ -646,36 +661,36 @@ public class OptionsMenu : MonoBehaviour
         }
         ApplyCrosshairColor(crosshairColorIndex, false);
 
-        bool showFps = PlayerPrefs.GetInt(ShowFpsKey, DefaultHudWidgetVisible) == 1;
+        bool showFps = PrefGetInt(PrefKey.ShowFps, DefaultHudOn) == 1;
         if (showFpsToggle != null)
         {
             showFpsToggle.SetValue(showFps, false);
         }
-        ApplyHudWidget(fpsWidget, showFps, ShowFpsKey, false);
+        ApplyHudWidget(fpsWidget, showFps, PrefKey.ShowFps, false);
 
-        bool showPing = PlayerPrefs.GetInt(ShowPingKey, DefaultHudWidgetVisible) == 1;
+        bool showPing = PrefGetInt(PrefKey.ShowPing, DefaultHudOn) == 1;
         if (showPingToggle != null)
         {
             showPingToggle.SetValue(showPing, false);
         }
-        ApplyHudWidget(pingWidget, showPing, ShowPingKey, false);
+        ApplyHudWidget(pingWidget, showPing, PrefKey.ShowPing, false);
 
-        bool showSystemClock = PlayerPrefs.GetInt(ShowSystemClockKey, DefaultHudWidgetVisible) == 1;
+        bool showSystemClock = PrefGetInt(PrefKey.ShowClock, DefaultHudOn) == 1;
         if (showSystemClockToggle != null)
         {
             showSystemClockToggle.SetValue(showSystemClock, false);
         }
-        ApplyHudWidget(systemClockWidget, showSystemClock, ShowSystemClockKey, false);
+        ApplyHudWidget(systemClockWidget, showSystemClock, PrefKey.ShowClock, false);
     }
 
-    int GetSavedResolutionIndex()
+    int GetSavedResIndex()
     {
         if (resList.Count == 0)
         {
             return 0;
         }
 
-        if (!PlayerPrefs.HasKey(ResolutionWidthKey) || !PlayerPrefs.HasKey(ResolutionHeightKey))
+        if (!PrefHasKey(PrefKey.ResolutionWidth) || !PrefHasKey(PrefKey.ResolutionHeight))
         {
             return 0;
         }
@@ -683,8 +698,8 @@ public class OptionsMenu : MonoBehaviour
         int defaultWidth = Screen.width;
         int defaultHeight = Screen.height;
 
-        int savedWidth = PlayerPrefs.GetInt(ResolutionWidthKey, defaultWidth);
-        int savedHeight = PlayerPrefs.GetInt(ResolutionHeightKey, defaultHeight);
+        int savedWidth = PrefGetInt(PrefKey.ResolutionWidth, defaultWidth);
+        int savedHeight = PrefGetInt(PrefKey.ResolutionHeight, defaultHeight);
 
         for (int i = 0; i < resList.Count; i++)
         {
@@ -712,13 +727,18 @@ public class OptionsMenu : MonoBehaviour
         return closestIndex;
     }
 
-    FullScreenMode GetFullScreenModeFromOption(int option)
+    ModeOption ClampModeOption(int option)
+    {
+        return (ModeOption)Mathf.Clamp(option, (int)ModeOption.Windowed, (int)ModeOption.Fullscreen);
+    }
+
+    FullScreenMode GetDisplayModeFromOption(ModeOption option)
     {
         switch (option)
         {
-            case 1:
+            case ModeOption.Borderless:
                 return FullScreenMode.FullScreenWindow;
-            case 2:
+            case ModeOption.Fullscreen:
 #if UNITY_STANDALONE_WIN
                 return FullScreenMode.ExclusiveFullScreen;
 #else
@@ -729,34 +749,39 @@ public class OptionsMenu : MonoBehaviour
         }
     }
 
-    int GetModeOption()
+    ModeOption GetModeOption()
     {
         if (displayModeDropdown != null)
         {
-            return Mathf.Clamp(displayModeDropdown.value, 0, 2);
+            return ClampModeOption(displayModeDropdown.value);
         }
 
-        return Mathf.Clamp(PlayerPrefs.GetInt(DisplayModeKey, 1), 0, 2);
+        return ClampModeOption(PrefGetInt(PrefKey.DisplayMode, (int)ModeOption.Borderless));
     }
 
     FullScreenMode GetMode()
     {
-        return GetFullScreenModeFromOption(GetModeOption());
+        return GetDisplayModeFromOption(GetModeOption());
     }
 
-    bool IsBorderlessOption(int option)
+    bool IsBorderlessOption(ModeOption option)
     {
-        return option == BorderlessModeOption;
+        return option == ModeOption.Borderless;
     }
 
-    int GetCurrentResolutionIndex()
+    bool IsFullscreenOption(ModeOption option)
+    {
+        return option == ModeOption.Fullscreen;
+    }
+
+    int GetCurrentResIndex()
     {
         if (resolutionDropdown != null)
         {
             return Mathf.Clamp(resolutionDropdown.value, 0, Mathf.Max(0, resList.Count - 1));
         }
 
-        return GetSavedResolutionIndex();
+        return GetSavedResIndex();
     }
 
     void SetResolutionInteractable(bool isInteractable)
@@ -779,15 +804,15 @@ public class OptionsMenu : MonoBehaviour
         resolutionDropdown.RefreshShownValue();
     }
 
-    void ApplyResolutionForMode(int modeOption, bool wasBorderless)
+    void ApplyResMode(ModeOption displayModeOption, bool wasBorderless)
     {
         if (resList.Count == 0)
         {
-            SetResolutionInteractable(!IsBorderlessOption(modeOption));
+            SetResolutionInteractable(!IsBorderlessOption(displayModeOption));
             return;
         }
 
-        if (IsBorderlessOption(modeOption))
+        if (IsBorderlessOption(displayModeOption))
         {
             SetResolutionInteractable(false);
             SetResolutionValue(BestResolutionIndex);
@@ -797,14 +822,14 @@ public class OptionsMenu : MonoBehaviour
 
         SetResolutionInteractable(true);
         int targetIndex = wasBorderless
-            ? Mathf.Clamp(lastManualResolutionIndex, 0, resList.Count - 1)
-            : GetCurrentResolutionIndex();
+            ? Mathf.Clamp(manualResIndex, 0, resList.Count - 1)
+            : GetCurrentResIndex();
 
         SetResolutionValue(targetIndex);
         ApplyResolution(targetIndex, false);
     }
 
-    int GetDropdownIndexForQuality(int qualityIndex)
+    int GetQualityDropdownIndex(int qualityIndex)
     {
         if (graphicsQualityDropdown == null || graphicsQualityDropdown.options.Count == 0)
         {
@@ -814,35 +839,31 @@ public class OptionsMenu : MonoBehaviour
         return Mathf.Clamp(qualityIndex, 0, graphicsQualityDropdown.options.Count - 1);
     }
 
-    int GetQualityIndexFromDropdownOption(int optionIndex)
+    int GetQualityFromOption(int optionIndex)
     {
-        if (graphicsQualityDropdown == null || graphicsQualityDropdown.options.Count == 0)
-        {
-            return Mathf.Clamp(optionIndex, 0, Mathf.Max(0, QualitySettings.names.Length - 1));
-        }
-
         return Mathf.Clamp(optionIndex, 0, Mathf.Max(0, QualitySettings.names.Length - 1));
     }
 
-    void OnDisplayModeChanged(int optionIndex)
+    public void OnDisplayModeChanged(int optionIndex)
     {
-        int clampedOption = Mathf.Clamp(optionIndex, 0, 2);
-        bool wasBorderless = IsBorderlessOption(currentDisplayModeOption);
+        ModeOption clampedOption = ClampModeOption(optionIndex);
+        bool wasBorderless = IsBorderlessOption(displayModeOption);
         bool isBorderless = IsBorderlessOption(clampedOption);
 
         if (!wasBorderless && isBorderless)
         {
-            lastManualResolutionIndex = GetCurrentResolutionIndex();
+            manualResIndex = GetCurrentResIndex();
         }
 
         ApplyDisplayMode(clampedOption, true);
-        ApplyResolutionForMode(clampedOption, wasBorderless);
-        currentDisplayModeOption = clampedOption;
+        RebuildResolutionList(clampedOption);
+        ApplyResMode(clampedOption, wasBorderless);
+        displayModeOption = clampedOption;
     }
 
-    void OnResolutionChanged(int optionIndex)
+    public void OnResolutionChanged(int optionIndex)
     {
-        if (IsBorderlessOption(currentDisplayModeOption))
+        if (IsBorderlessOption(displayModeOption))
         {
             return;
         }
@@ -853,84 +874,18 @@ public class OptionsMenu : MonoBehaviour
         }
 
         int clampedIndex = Mathf.Clamp(optionIndex, 0, resList.Count - 1);
-        lastManualResolutionIndex = clampedIndex;
+        manualResIndex = clampedIndex;
         ApplyResolution(clampedIndex, true);
     }
 
-    void OnQualityChanged(int optionIndex)
+    void ApplyDisplayMode(ModeOption option, bool save)
     {
-        ApplyQualityByDropdownIndex(optionIndex, true);
-    }
-
-    void OnFovChanged(float value)
-    {
-        ApplyCameraFov(value, true);
-    }
-
-    void OnSensitivityChanged(float value)
-    {
-        ApplyCameraSensitivity(value, true);
-    }
-
-    void OnMasterVolumeChanged(float value)
-    {
-        ApplyVolume(value, masterVolumeParam, MasterVolumeKey, true, true);
-    }
-
-    void OnGameSfxVolumeChanged(float value)
-    {
-        ApplyVolume(value, gameSfxVolumeParam, GameSfxVolumeKey, true, false);
-    }
-
-    void OnMenuSfxVolumeChanged(float value)
-    {
-        ApplyVolume(value, menuSfxVolumeParam, MenuSfxVolumeKey, true, false);
-    }
-
-    void OnGameMusicVolumeChanged(float value)
-    {
-        ApplyVolume(value, gameMusicVolumeParam, GameMusicVolumeKey, true, false);
-    }
-
-    void OnMenuMusicVolumeChanged(float value)
-    {
-        ApplyVolume(value, menuMusicVolumeParam, MenuMusicVolumeKey, true, false);
-    }
-
-    void OnCrosshairSizeChanged(float value)
-    {
-        ApplyCrosshairSize(value, true);
-    }
-
-    void OnCrosshairColorChanged(int index)
-    {
-        ApplyCrosshairColor(index, true);
-    }
-
-    void OnShowFpsChanged(bool isOn)
-    {
-        ApplyHudWidget(fpsWidget, isOn, ShowFpsKey, true);
-    }
-
-    void OnShowPingChanged(bool isOn)
-    {
-        ApplyHudWidget(pingWidget, isOn, ShowPingKey, true);
-    }
-
-    void OnShowSystemClockChanged(bool isOn)
-    {
-        ApplyHudWidget(systemClockWidget, isOn, ShowSystemClockKey, true);
-    }
-
-    void ApplyDisplayMode(int optionIndex, bool save)
-    {
-        int clampedOption = Mathf.Clamp(optionIndex, 0, 2);
-        FullScreenMode mode = GetFullScreenModeFromOption(clampedOption);
+        FullScreenMode mode = GetDisplayModeFromOption(option);
         Screen.fullScreenMode = mode;
 
         if (save)
         {
-            PlayerPrefs.SetInt(DisplayModeKey, clampedOption);
+            PrefSetInt(PrefKey.DisplayMode, (int)option);
         }
     }
 
@@ -949,44 +904,35 @@ public class OptionsMenu : MonoBehaviour
 
         if (save)
         {
-            PlayerPrefs.SetInt(ResolutionWidthKey, resolution.x);
-            PlayerPrefs.SetInt(ResolutionHeightKey, resolution.y);
+            PrefSetInt(PrefKey.ResolutionWidth, resolution.x);
+            PrefSetInt(PrefKey.ResolutionHeight, resolution.y);
         }
     }
 
-    void ApplyQualityByDropdownIndex(int optionIndex, bool save)
+    void ApplyQualityOption(int optionIndex, bool save)
     {
-        int qualityIndex = GetQualityIndexFromDropdownOption(Mathf.Clamp(optionIndex, 0, Mathf.Max(0, graphicsQualityDropdown != null ? graphicsQualityDropdown.options.Count - 1 : QualitySettings.names.Length - 1)));
+        int qualityIndex = GetQualityFromOption(Mathf.Clamp(optionIndex, 0, Mathf.Max(0, graphicsQualityDropdown != null ? graphicsQualityDropdown.options.Count - 1 : QualitySettings.names.Length - 1)));
         qualityIndex = Mathf.Clamp(qualityIndex, 0, Mathf.Max(0, QualitySettings.names.Length - 1));
         QualitySettings.SetQualityLevel(qualityIndex, true);
 
         if (save)
         {
-            PlayerPrefs.SetInt(QualityLevelKey, qualityIndex);
+            PrefSetInt(PrefKey.QualityLevel, qualityIndex);
         }
     }
 
     void ApplyCameraFov(float fov, bool save)
     {
         float clamped = Mathf.Clamp(fov, MinFov, MaxFov);
-        PlayerController[] players = UnityEngine.Object.FindObjectsByType<PlayerController>(
-            FindObjectsInactive.Exclude,
-            FindObjectsSortMode.None
-        );
-
-        for (int i = 0; i < players.Length; i++)
+        PlayerMovement owner = GetOwnerPlayer();
+        if (owner != null && owner.PlayerCamera != null)
         {
-            if (players[i] == null || !players[i].IsOwner || players[i].playerCamera == null)
-            {
-                continue;
-            }
-
-            players[i].playerCamera.fieldOfView = clamped;
+            owner.PlayerCamera.fieldOfView = clamped;
         }
 
         if (save)
         {
-            PlayerPrefs.SetFloat(CameraFovKey, clamped);
+            PrefSetFloat(PrefKey.CameraFov, clamped);
         }
     }
 
@@ -995,29 +941,19 @@ public class OptionsMenu : MonoBehaviour
         float clampedPercent = Mathf.Clamp(sensitivityPercent, MinSensitivityPercent, 100f);
         float steppedPercent = Mathf.Round(clampedPercent);
         float mappedSensitivity = SensMap(steppedPercent);
-
-        PlayerController[] players = UnityEngine.Object.FindObjectsByType<PlayerController>(
-            FindObjectsInactive.Exclude,
-            FindObjectsSortMode.None
-        );
-
-        for (int i = 0; i < players.Length; i++)
+        PlayerMovement owner = GetOwnerPlayer();
+        if (owner != null)
         {
-            if (players[i] == null || !players[i].IsOwner)
-            {
-                continue;
-            }
-
-            players[i].mouseSensitivity = mappedSensitivity;
+            owner.mouseSensitivity = mappedSensitivity;
         }
 
         if (save)
         {
-            PlayerPrefs.SetFloat(CameraSensitivityPercentKey, steppedPercent);
+            PrefSetFloat(PrefKey.SensPct, steppedPercent);
         }
     }
 
-    void ApplyVolume(float percentValue, string exposedParamName, string prefKey, bool save, bool fallbackToListener)
+    void ApplyVolume(float percentValue, string exposedParamName, PrefKey prefKey, bool save, bool fallbackToListener)
     {
         float clamped = Mathf.Clamp(percentValue, 0f, 100f);
         float normalized = clamped / 100f;
@@ -1025,12 +961,12 @@ public class OptionsMenu : MonoBehaviour
 
         if (audioMixer != null)
         {
-            appliedMixer = TrySetMixerVolume(exposedParamName, normalized);
+            appliedMixer = SetMixerVol(exposedParamName, normalized);
 
             if (!appliedMixer)
             {
-                string alternateParamName = GetAlternateVolumeParamName(exposedParamName);
-                appliedMixer = TrySetMixerVolume(alternateParamName, normalized);
+                string alternateParamName = GetAltVolParamName(exposedParamName);
+                appliedMixer = SetMixerVol(alternateParamName, normalized);
             }
         }
 
@@ -1041,11 +977,11 @@ public class OptionsMenu : MonoBehaviour
 
         if (save)
         {
-            PlayerPrefs.SetFloat(prefKey, clamped);
+            PrefSetFloat(prefKey, clamped);
         }
     }
 
-    bool TrySetMixerVolume(string paramName, float normalized)
+    bool SetMixerVol(string paramName, float normalized)
     {
         if (audioMixer == null || string.IsNullOrWhiteSpace(paramName))
         {
@@ -1055,7 +991,7 @@ public class OptionsMenu : MonoBehaviour
         return audioMixer.SetFloat(paramName.Trim(), LinearToDecibel(normalized));
     }
 
-    string GetAlternateVolumeParamName(string paramName)
+    string GetAltVolParamName(string paramName)
     {
         if (string.IsNullOrWhiteSpace(paramName))
         {
@@ -1063,19 +999,63 @@ public class OptionsMenu : MonoBehaviour
         }
 
         string trimmed = paramName.Trim();
-        if (trimmed.EndsWith("Volume", StringComparison.OrdinalIgnoreCase))
+        if (trimmed.EndsWith(VolumeSuffix, StringComparison.OrdinalIgnoreCase))
         {
-            return trimmed.Substring(0, trimmed.Length - "Volume".Length);
+            return trimmed.Substring(0, trimmed.Length - VolumeSuffix.Length);
         }
 
-        return trimmed + "Volume";
+        return trimmed + VolumeSuffix;
+    }
+
+    static string MixerName(MixerParam param)
+    {
+        switch (param)
+        {
+            case MixerParam.Master:
+                return "Master";
+            case MixerParam.GameSfx:
+                return "GameSFX";
+            case MixerParam.MenuSfx:
+                return "MenuSFX";
+            case MixerParam.GameMusic:
+                return "GameMusic";
+            case MixerParam.MenuMusic:
+                return "MenuMusic";
+            default:
+                throw new ArgumentOutOfRangeException(nameof(param), param, null);
+        }
+    }
+
+    PlayerMovement GetOwnerPlayer()
+    {
+        if (ownerPlayer != null && ownerPlayer.IsOwner)
+        {
+            return ownerPlayer;
+        }
+
+        PlayerMovement[] players = UnityEngine.Object.FindObjectsByType<PlayerMovement>(
+            FindObjectsInactive.Exclude,
+            FindObjectsSortMode.None
+        );
+
+        for (int i = 0; i < players.Length; i++)
+        {
+            if (players[i] != null && players[i].IsOwner)
+            {
+                ownerPlayer = players[i];
+                return ownerPlayer;
+            }
+        }
+
+        ownerPlayer = null;
+        return null;
     }
 
     float LinearToDecibel(float linear)
     {
-        if (linear <= 0.0001f)
+        if (linear <= MinLinearVolume)
         {
-            return -80f;
+            return MuteDb;
         }
 
         return Mathf.Log10(linear) * 20f;
@@ -1083,9 +1063,9 @@ public class OptionsMenu : MonoBehaviour
 
     void ApplyCrosshairSize(float sliderValue, bool save)
     {
-        float clamped = Mathf.Clamp(sliderValue, MinCrosshairSliderValue, MaxCrosshairSliderValue);
-        float t = Mathf.InverseLerp(MinCrosshairSliderValue, MaxCrosshairSliderValue, clamped);
-        float pixelSize = Mathf.Lerp(MinCrosshairPixelSize, MaxCrosshairPixelSize, t);
+        float clamped = Mathf.Clamp(sliderValue, MinCrosshairSize, MaxCrosshairSize);
+        float t = Mathf.InverseLerp(MinCrosshairSize, MaxCrosshairSize, clamped);
+        float pixelSize = Mathf.Lerp(MinCrosshairPx, MaxCrosshairPx, t);
 
         if (crosshairRect != null)
         {
@@ -1097,7 +1077,7 @@ public class OptionsMenu : MonoBehaviour
 
         if (save)
         {
-            PlayerPrefs.SetFloat(CrosshairSizeKey, clamped);
+            PrefSetFloat(PrefKey.CrosshairSize, clamped);
         }
     }
 
@@ -1112,11 +1092,11 @@ public class OptionsMenu : MonoBehaviour
 
         if (save)
         {
-            PlayerPrefs.SetInt(CrosshairColorKey, clamped);
+            PrefSetInt(PrefKey.CrosshairColor, clamped);
         }
     }
 
-    void ApplyHudWidget(GameObject widget, bool isVisible, string prefKey, bool save)
+    void ApplyHudWidget(GameObject widget, bool isVisible, PrefKey prefKey, bool save)
     {
         if (widget != null)
         {
@@ -1125,40 +1105,40 @@ public class OptionsMenu : MonoBehaviour
 
         if (save)
         {
-            PlayerPrefs.SetInt(prefKey, isVisible ? 1 : 0);
+            PrefSetInt(prefKey, isVisible ? 1 : 0);
         }
     }
 
     void EnsureVolumeDefaults()
     {
-        if (PlayerPrefs.GetInt(VolumeDefaultsInitializedKey, 0) == 1)
+        if (PrefGetInt(PrefKey.VolumeInit, 0) == 1)
         {
             return;
         }
 
-        bool hasAnyVolumeKey =
-            PlayerPrefs.HasKey(MasterVolumeKey) ||
-            PlayerPrefs.HasKey(GameSfxVolumeKey) ||
-            PlayerPrefs.HasKey(MenuSfxVolumeKey) ||
-            PlayerPrefs.HasKey(GameMusicVolumeKey) ||
-            PlayerPrefs.HasKey(MenuMusicVolumeKey);
+        bool hasVolumeKey =
+            PrefHasKey(PrefKey.MasterVolume) ||
+            PrefHasKey(PrefKey.GameSfx) ||
+            PrefHasKey(PrefKey.MenuSfx) ||
+            PrefHasKey(PrefKey.GameMusic) ||
+            PrefHasKey(PrefKey.MenuMusic);
 
         bool allVolumesZero =
-            Mathf.Approximately(PlayerPrefs.GetFloat(MasterVolumeKey, 0f), 0f) &&
-            Mathf.Approximately(PlayerPrefs.GetFloat(GameSfxVolumeKey, 0f), 0f) &&
-            Mathf.Approximately(PlayerPrefs.GetFloat(MenuSfxVolumeKey, 0f), 0f) &&
-            Mathf.Approximately(PlayerPrefs.GetFloat(GameMusicVolumeKey, 0f), 0f) &&
-            Mathf.Approximately(PlayerPrefs.GetFloat(MenuMusicVolumeKey, 0f), 0f);
+            Mathf.Approximately(PrefGetFloat(PrefKey.MasterVolume, 0f), 0f) &&
+            Mathf.Approximately(PrefGetFloat(PrefKey.GameSfx, 0f), 0f) &&
+            Mathf.Approximately(PrefGetFloat(PrefKey.MenuSfx, 0f), 0f) &&
+            Mathf.Approximately(PrefGetFloat(PrefKey.GameMusic, 0f), 0f) &&
+            Mathf.Approximately(PrefGetFloat(PrefKey.MenuMusic, 0f), 0f);
 
-        if (!hasAnyVolumeKey || allVolumesZero)
+        if (!hasVolumeKey || allVolumesZero)
         {
-            PlayerPrefs.SetFloat(MasterVolumeKey, DefaultVolumePercent);
-            PlayerPrefs.SetFloat(GameSfxVolumeKey, DefaultVolumePercent);
-            PlayerPrefs.SetFloat(MenuSfxVolumeKey, DefaultVolumePercent);
-            PlayerPrefs.SetFloat(GameMusicVolumeKey, DefaultVolumePercent);
-            PlayerPrefs.SetFloat(MenuMusicVolumeKey, DefaultVolumePercent);
+            PrefSetFloat(PrefKey.MasterVolume, DefaultVolumePercent);
+            PrefSetFloat(PrefKey.GameSfx, DefaultVolumePercent);
+            PrefSetFloat(PrefKey.MenuSfx, DefaultVolumePercent);
+            PrefSetFloat(PrefKey.GameMusic, DefaultVolumePercent);
+            PrefSetFloat(PrefKey.MenuMusic, DefaultVolumePercent);
         }
 
-        PlayerPrefs.SetInt(VolumeDefaultsInitializedKey, 1);
+        PrefSetInt(PrefKey.VolumeInit, 1);
     }
 }

@@ -12,34 +12,20 @@ public class SliderSync : MonoBehaviour
 
     void Awake()
     {
-        if (slider == null || inputField == null)
-        {
-            enabled = false;
-            return;
-        }
+        EnsureSetup();
 
         slider.onValueChanged.AddListener(OnSliderChanged);
-        inputField.onEndEdit.AddListener(OnInputEndEdit);
+        inputField.onEndEdit.AddListener(OnInputEdit);
     }
 
     void OnEnable()
     {
-        if (slider == null || inputField == null)
-        {
-            return;
-        }
-
-        RefreshInputFromSlider();
+        SyncInput();
     }
 
     void Start()
     {
-        if (slider == null || inputField == null)
-        {
-            return;
-        }
-
-        RefreshInputFromSlider();
+        SyncInput();
     }
 
     void OnDestroy()
@@ -51,7 +37,7 @@ public class SliderSync : MonoBehaviour
 
         if (inputField != null)
         {
-            inputField.onEndEdit.RemoveListener(OnInputEndEdit);
+            inputField.onEndEdit.RemoveListener(OnInputEdit);
         }
     }
 
@@ -62,10 +48,10 @@ public class SliderSync : MonoBehaviour
             return;
         }
 
-        RefreshInputFromSlider();
+        SyncInput();
     }
 
-    void OnInputEndEdit(string text)
+    void OnInputEdit(string text)
     {
         if (suppressCallbacks)
         {
@@ -77,7 +63,7 @@ public class SliderSync : MonoBehaviour
 
         if (!valid)
         {
-            RefreshInputFromSlider();
+            SyncInput();
             return;
         }
 
@@ -90,7 +76,7 @@ public class SliderSync : MonoBehaviour
         suppressCallbacks = false;
     }
 
-    void RefreshInputFromSlider()
+    void SyncInput()
     {
         inputField.SetTextWithoutNotify(FormatValue(slider.value));
     }
@@ -98,5 +84,18 @@ public class SliderSync : MonoBehaviour
     string FormatValue(float value)
     {
         return Mathf.RoundToInt(value).ToString();
+    }
+
+    void EnsureSetup()
+    {
+        if (slider == null)
+        {
+            throw new System.InvalidOperationException("SliderSync setup failed: slider reference is missing.");
+        }
+
+        if (inputField == null)
+        {
+            throw new System.InvalidOperationException("SliderSync setup failed: inputField reference is missing.");
+        }
     }
 }

@@ -6,6 +6,11 @@ using TMPro;
 
 public class PauseMenu : MonoBehaviour
 {
+    private enum TriggerName
+    {
+        Copied
+    }
+
     [SerializeField] private GameObject panel;
     [SerializeField] private GameObject pauseMainPanel;
     [SerializeField] private GameObject optionsMenuPanel;
@@ -13,7 +18,7 @@ public class PauseMenu : MonoBehaviour
     [SerializeField] private TMP_Text joinCodeText;
     [SerializeField] private Animator codeCopiedAnimator;
     private InputActions input;
-    private static readonly int CopiedTrigger = Animator.StringToHash("Copied");
+    private string lastJoinCode = string.Empty;
 
     public static bool isOpen = false;
     public static event Action<bool> PauseStateChanged;
@@ -33,19 +38,7 @@ public class PauseMenu : MonoBehaviour
         input.System.Pause.performed += OnPauseInput;
         input.System.Enable();
         input.UI.Disable();
-    }
-
-    void Update()
-    {
-        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsClient)
-        {
-            return;
-        }
-
-        if (joinCodeText != null)
-        {
-            joinCodeText.text = GameSession.Instance != null ? GameSession.Instance.JoinCode : string.Empty;
-        }
+        RefreshJoinCode(true);
     }
 
     void Toggle()
@@ -66,6 +59,7 @@ public class PauseMenu : MonoBehaviour
 
         if (isOpen)
         {
+            RefreshJoinCode(true);
             ResetCopy();
             ShowMain();
             input.UI.Enable();
@@ -175,8 +169,9 @@ public class PauseMenu : MonoBehaviour
 
         if (codeCopiedAnimator != null)
         {
-            codeCopiedAnimator.ResetTrigger(CopiedTrigger);
-            codeCopiedAnimator.SetTrigger(CopiedTrigger);
+            string copiedTrigger = Trigger(TriggerName.Copied);
+            codeCopiedAnimator.ResetTrigger(copiedTrigger);
+            codeCopiedAnimator.SetTrigger(copiedTrigger);
         }
     }
 
@@ -259,6 +254,39 @@ public class PauseMenu : MonoBehaviour
 
         codeCopiedAnimator.Rebind();
         codeCopiedAnimator.Update(0f);
+    }
+
+    static string Trigger(TriggerName trigger)
+    {
+        switch (trigger)
+        {
+            case TriggerName.Copied:
+                return "Copied";
+            default:
+                throw new ArgumentOutOfRangeException(nameof(trigger), trigger, null);
+        }
+    }
+
+    void RefreshJoinCode(bool force)
+    {
+        if (joinCodeText == null)
+        {
+            return;
+        }
+
+        string joinCode = string.Empty;
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsClient && GameSession.Instance != null)
+        {
+            joinCode = GameSession.Instance.JoinCode ?? string.Empty;
+        }
+
+        if (!force && string.Equals(lastJoinCode, joinCode, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        lastJoinCode = joinCode;
+        joinCodeText.text = joinCode;
     }
 
     void ResetOptionsTab()

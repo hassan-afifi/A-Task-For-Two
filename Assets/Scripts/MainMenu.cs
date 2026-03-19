@@ -1,7 +1,9 @@
-﻿using UnityEngine;
+using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 using System.Linq;
+using UnityEngine.InputSystem;
+
 public class MainMenu : MonoBehaviour
 {
     [SerializeField] private TMP_InputField nameInput;
@@ -11,9 +13,12 @@ public class MainMenu : MonoBehaviour
     [SerializeField] private RelayManager relay;
     [SerializeField] private GameObject mainMenuPanel;
     [SerializeField] private GameObject optionsMenuPanel;
+    private InputActions input;
 
     void Awake()
     {
+        input = new InputActions();
+
         if (nameInput != null)
         {
             nameInput.onValueChanged.AddListener(OnInput);
@@ -29,11 +34,31 @@ public class MainMenu : MonoBehaviour
 
     void OnEnable()
     {
+        if (input == null)
+        {
+            input = new InputActions();
+        }
+
+        input.System.Pause.performed += OnPauseInput;
+        input.System.Enable();
+        input.UI.Disable();
+
         LoadInputs();
         UpdateButtons();
         CloseOptions();
     }
 
+    void OnDisable()
+    {
+        if (input == null)
+        {
+            return;
+        }
+
+        input.System.Pause.performed -= OnPauseInput;
+        input.System.Disable();
+        input.UI.Disable();
+    }
 
     void OnDestroy()
     {
@@ -45,6 +70,12 @@ public class MainMenu : MonoBehaviour
         if (codeInput != null)
         {
             codeInput.onValueChanged.RemoveListener(OnInput);
+        }
+
+        if (input != null)
+        {
+            input.Dispose();
+            input = null;
         }
     }
 
@@ -90,7 +121,7 @@ public class MainMenu : MonoBehaviour
 
         if (GameSession.Instance == null || relay == null)
         {
-            return;
+            throw new System.InvalidOperationException("OnCreateGame failed: GameSession or RelayManager is missing.");
         }
 
         GameSession.Instance.SetName(nameInput.text.Trim());
@@ -107,7 +138,7 @@ public class MainMenu : MonoBehaviour
 
         if (GameSession.Instance == null || relay == null)
         {
-            return;
+            throw new System.InvalidOperationException("OnJoinGame failed: GameSession or RelayManager is missing.");
         }
 
         string cleanedName = nameInput.text.Trim();
@@ -181,6 +212,26 @@ public class MainMenu : MonoBehaviour
         }
 
         return code.Trim().Length == 6;
+    }
+
+    void OnPauseInput(InputAction.CallbackContext context)
+    {
+        if (!context.performed)
+        {
+            return;
+        }
+
+        if (optionsMenuPanel != null && optionsMenuPanel.activeInHierarchy)
+        {
+            return;
+        }
+
+        if (mainMenuPanel != null && !mainMenuPanel.activeInHierarchy)
+        {
+            return;
+        }
+
+        OpenOptions();
     }
 
     void ResetOptionsTab()

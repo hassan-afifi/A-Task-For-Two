@@ -5,16 +5,17 @@ using TMPro;
 
 public class CharacterSelection : MonoBehaviour
 {
+    private const string CloneSuffix = "(Clone)";
     [SerializeField] private Transform charactersParent;
     [SerializeField] private TMP_Text characterNameText;
     [SerializeField] private GenderToggle genderToggleUI;
-    [SerializeField] private int maleStartIndex = 0;
-    [SerializeField] private int femaleStartIndex = 3;
-    [SerializeField] private int charactersPerGender = 3;
-    [SerializeField] private float carouselRadius = 1f;
-    [SerializeField] private float rotationDuration = 0.28f;
-    [SerializeField, Range(0.1f, 1f)] private float backScale = 0.5f;
-    [SerializeField] private float depthScaleExponent = 1.2f;
+    private int maleStartIndex = 0;
+    private int femaleStartIndex = 3;
+    private int charactersPerGender = 3;
+    private float carouselRadius = 1f;
+    private float rotationDuration = 0.28f;
+    private float backScale = 0.5f;
+    private float depthScaleExponent = 1.2f;
     private GameObject[] characters;
     private Vector3[] baseScales;
     private Vector3 frontPos;
@@ -275,7 +276,7 @@ public class CharacterSelection : MonoBehaviour
             return;
         }
 
-        string characterName = characters[index].name.Replace("(Clone)", string.Empty).Trim();
+        string characterName = characters[index].name.Replace(CloneSuffix, string.Empty).Trim();
         characterNameText.text = characterName;
     }
 

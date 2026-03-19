@@ -6,8 +6,12 @@ using UnityEngine.UI;
 
 public class DropdownHelper : MonoBehaviour
 {
+    private const string ArrowObjectName = "Arrow";
+    private const string DropdownNameToken = "Dropdown";
+
     private TMP_Dropdown dropdown;
     private Graphic arrowGraphic;
+    private bool arrowSearchDone;
     private bool wasExpanded;
     private bool arrowVisible;
     private bool arrowInit;
@@ -16,12 +20,28 @@ public class DropdownHelper : MonoBehaviour
     void Awake()
     {
         dropdown = GetComponent<TMP_Dropdown>();
+        if (dropdown == null)
+        {
+            enabled = false;
+            return;
+        }
+
         CacheArrow();
         UpdateArrow(true);
     }
 
     void OnEnable()
     {
+        if (dropdown == null)
+        {
+            dropdown = GetComponent<TMP_Dropdown>();
+            if (dropdown == null)
+            {
+                enabled = false;
+                return;
+            }
+        }
+
         CacheArrow();
         UpdateArrow(true);
     }
@@ -51,17 +71,12 @@ public class DropdownHelper : MonoBehaviour
 
     void CacheArrow()
     {
-        if (dropdown == null)
-        {
-            dropdown = GetComponent<TMP_Dropdown>();
-        }
-
-        if (arrowGraphic != null || dropdown == null)
+        if (arrowGraphic != null || dropdown == null || arrowSearchDone)
         {
             return;
         }
 
-        Transform directArrow = dropdown.transform.Find("Arrow");
+        Transform directArrow = dropdown.transform.Find(ArrowObjectName);
         if (directArrow != null)
         {
             arrowGraphic = directArrow.GetComponent<Graphic>();
@@ -69,6 +84,7 @@ public class DropdownHelper : MonoBehaviour
 
         if (arrowGraphic != null)
         {
+            arrowSearchDone = true;
             return;
         }
 
@@ -81,12 +97,15 @@ public class DropdownHelper : MonoBehaviour
                 continue;
             }
 
-            if (string.Equals(current.gameObject.name, "Arrow", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(current.gameObject.name, ArrowObjectName, StringComparison.OrdinalIgnoreCase))
             {
                 arrowGraphic = current;
+                arrowSearchDone = true;
                 return;
             }
         }
+
+        arrowSearchDone = true;
     }
 
     void UpdateArrow(bool force)
@@ -118,7 +137,7 @@ public class DropdownHelper : MonoBehaviour
         yield return null;
         yield return null;
 
-        ScrollRect scrollRect = FindOpenListScrollRect();
+        ScrollRect scrollRect = FindOpenList();
         if (scrollRect == null || scrollRect.content == null || scrollRect.viewport == null)
         {
             centerRoutine = null;
@@ -140,8 +159,8 @@ public class DropdownHelper : MonoBehaviour
         }
 
         float itemHeight = GetItemHeight(content, optionCount);
-        float selectedCenterFromTop = (selectedIndex + 0.5f) * itemHeight;
-        float topOffset = selectedCenterFromTop - (viewportHeight * 0.5f);
+        float centerFromTop = (selectedIndex + 0.5f) * itemHeight;
+        float topOffset = centerFromTop - (viewportHeight * 0.5f);
         float maxOffset = Mathf.Max(0.0001f, contentHeight - viewportHeight);
         float normalized = 1f - Mathf.Clamp01(topOffset / maxOffset);
 
@@ -168,7 +187,7 @@ public class DropdownHelper : MonoBehaviour
         return Mathf.Max(1f, estimated);
     }
 
-    ScrollRect FindOpenListScrollRect()
+    ScrollRect FindOpenList()
     {
         Canvas canvas = GetComponentInParent<Canvas>();
         if (canvas == null)
@@ -189,7 +208,7 @@ public class DropdownHelper : MonoBehaviour
             }
 
             string name = current.gameObject.name;
-            if (!name.Contains("Dropdown"))
+            if (!name.Contains(DropdownNameToken))
             {
                 continue;
             }

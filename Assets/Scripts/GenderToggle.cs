@@ -9,21 +9,31 @@ public class GenderChangedEvent : UnityEvent<bool>
 
 public class GenderToggle : MonoBehaviour
 {
+    private enum BoolParam
+    {
+        IsMale
+    }
+
+    private enum AnimState
+    {
+        MaleSelected,
+        FemaleSelected
+    }
+
     [SerializeField] private Animator selectorAnimator;
     [SerializeField] private RectTransform selectorRect;
     [SerializeField] private Graphic maleIconGraphic;
     [SerializeField] private Graphic femaleIconGraphic;
-    [SerializeField] private Color activeIconColor = new Color32(26, 26, 26, 255);
-    [SerializeField] private Color inactiveIconColor = new Color32(200, 150, 50, 128);
-    [SerializeField] private float malePositionX = -40f;
-    [SerializeField] private float femalePositionX = 40f;
-    [SerializeField] private string isMaleParam = "IsMale";
-    [SerializeField] private string maleStateName = "MaleSelected";
-    [SerializeField] private string femaleStateName = "FemaleSelected";
+    private Color activeIconColor = new Color32(26, 26, 26, 255);
+    private Color inactiveIconColor = new Color32(200, 150, 50, 128);
+    private float malePositionX = -40f;
+    private float femalePositionX = 40f;
 
     public GenderChangedEvent genderChanged;
     private bool isMale;
     private bool initialized;
+    private bool blendInit;
+    private float lastSelectorX;
 
     void Start()
     {
@@ -43,10 +53,20 @@ public class GenderToggle : MonoBehaviour
 
     void Update()
     {
-        if (selectorRect != null)
+        if (selectorRect == null)
         {
-            ApplyBlend();
+            return;
         }
+
+        float currentX = selectorRect.anchoredPosition.x;
+        if (blendInit && Mathf.Abs(currentX - lastSelectorX) <= 0.0001f)
+        {
+            return;
+        }
+
+        lastSelectorX = currentX;
+        blendInit = true;
+        ApplyBlend();
     }
 
     public void ToggleGender()
@@ -79,18 +99,11 @@ public class GenderToggle : MonoBehaviour
             return;
         }
 
-        selectorAnimator.SetBool(isMaleParam, isMale);
+        selectorAnimator.SetBool(BoolName(BoolParam.IsMale), isMale);
 
         if (instant)
         {
-            string state = isMale ? maleStateName : femaleStateName;
-
-            if (string.IsNullOrEmpty(state))
-            {
-                return;
-            }
-
-            selectorAnimator.Play(state, 0, 1f);
+            selectorAnimator.Play(isMale ? StateName(AnimState.MaleSelected) : StateName(AnimState.FemaleSelected), 0, 1f);
         }
     }
 
@@ -98,6 +111,7 @@ public class GenderToggle : MonoBehaviour
     {
         if (selectorRect != null)
         {
+            blendInit = false;
             ApplyBlend();
             return;
         }
@@ -115,6 +129,12 @@ public class GenderToggle : MonoBehaviour
 
     void ApplyBlend()
     {
+        if (selectorRect != null)
+        {
+            lastSelectorX = selectorRect.anchoredPosition.x;
+            blendInit = true;
+        }
+
         float t = Mathf.InverseLerp(malePositionX, femalePositionX, selectorRect.anchoredPosition.x);
         t = Mathf.Clamp01(t);
 
@@ -126,6 +146,30 @@ public class GenderToggle : MonoBehaviour
         if (femaleIconGraphic != null)
         {
             femaleIconGraphic.color = Color.Lerp(inactiveIconColor, activeIconColor, t);
+        }
+    }
+
+    static string BoolName(BoolParam param)
+    {
+        switch (param)
+        {
+            case BoolParam.IsMale:
+                return "IsMale";
+            default:
+                throw new System.ArgumentOutOfRangeException(nameof(param), param, null);
+        }
+    }
+
+    static string StateName(AnimState state)
+    {
+        switch (state)
+        {
+            case AnimState.MaleSelected:
+                return "MaleSelected";
+            case AnimState.FemaleSelected:
+                return "FemaleSelected";
+            default:
+                throw new System.ArgumentOutOfRangeException(nameof(state), state, null);
         }
     }
 }

@@ -1,0 +1,11 @@
+{
+    "name": "PlayMode",
+    "references": [
+        "ATaskForTwo",
+        "Unity.TextMeshPro",
+        "Unity.Netcode.Runtime"
+    ],
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ]
+}

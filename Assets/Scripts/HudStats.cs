@@ -5,6 +5,11 @@ using UnityEngine;
 
 public class HudStats : MonoBehaviour
 {
+    private const string FpsFormat = "{0} FPS";
+    private const string PingUnavailableText = "-- ms";
+    private const string PingFormat = "{0} ms";
+    private const string ClockFormat = "h:mm tt";
+
     [SerializeField] private TMP_Text fpsText;
     [SerializeField] private TMP_Text pingText;
     [SerializeField] private TMP_Text clockText;
@@ -16,19 +21,24 @@ public class HudStats : MonoBehaviour
     private int frameCount;
     private float pingTimer;
     private float clockTimer;
+    private bool layoutInit;
+    private bool lastFpsOn;
+    private bool lastPingOn;
+    private bool lastClockOn;
     private const float StatWidth = 100f;
     private const float StatHeight = 50f;
+
+    void Awake()
+    {
+        Layout();
+    }
 
     void Update()
     {
         UpdateFps();
         UpdatePing();
         UpdateClock();
-    }
-
-    void LateUpdate()
-    {
-        Layout();
+        LayoutIfNeeded();
     }
 
     void UpdateFps()
@@ -45,7 +55,7 @@ public class HudStats : MonoBehaviour
 
         if (fpsText != null)
         {
-            fpsText.text = $"{Mathf.RoundToInt(fps)} FPS";
+            fpsText.text = string.Format(FpsFormat, Mathf.RoundToInt(fps));
         }
 
         frameCount = 0;
@@ -70,17 +80,17 @@ public class HudStats : MonoBehaviour
 
         if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsClient)
         {
-            pingText.text = "-- ms";
+            pingText.text = PingUnavailableText;
             return;
         }
 
         if (!TryGetPing(out ulong rttMs))
         {
-            pingText.text = "-- ms";
+            pingText.text = PingUnavailableText;
             return;
         }
 
-        pingText.text = $"{rttMs} ms";
+        pingText.text = string.Format(PingFormat, rttMs);
     }
 
     void UpdateClock()
@@ -96,7 +106,7 @@ public class HudStats : MonoBehaviour
 
         if (clockText != null)
         {
-            clockText.text = DateTime.Now.ToString("h:mm tt");
+            clockText.text = DateTime.Now.ToString(ClockFormat, System.Globalization.CultureInfo.InvariantCulture);
         }
     }
 
@@ -106,6 +116,22 @@ public class HudStats : MonoBehaviour
         PlaceWidget(fpsWidget, ref activeIndex);
         PlaceWidget(pingWidget, ref activeIndex);
         PlaceWidget(clockWidget, ref activeIndex);
+        lastFpsOn = fpsWidget != null && fpsWidget.gameObject.activeSelf;
+        lastPingOn = pingWidget != null && pingWidget.gameObject.activeSelf;
+        lastClockOn = clockWidget != null && clockWidget.gameObject.activeSelf;
+        layoutInit = true;
+    }
+
+    void LayoutIfNeeded()
+    {
+        bool fpsOn = fpsWidget != null && fpsWidget.gameObject.activeSelf;
+        bool pingOn = pingWidget != null && pingWidget.gameObject.activeSelf;
+        bool clockOn = clockWidget != null && clockWidget.gameObject.activeSelf;
+
+        if (!layoutInit || fpsOn != lastFpsOn || pingOn != lastPingOn || clockOn != lastClockOn)
+        {
+            Layout();
+        }
     }
 
     void PlaceWidget(RectTransform widget, ref int activeIndex)

@@ -2,10 +2,45 @@ using UnityEngine;
 
 public class GameSession : MonoBehaviour
 {
-    private const string PlayerNameKey = "session_player_name";
-    private const string CharIndexKey = "session_char_index";
+    private enum PrefKey
+    {
+        PlayerName,
+        CharIndex
+    }
 
-    public static GameSession Instance;
+    private static readonly System.Collections.Generic.Dictionary<PrefKey, string> PrefNames =
+        new System.Collections.Generic.Dictionary<PrefKey, string>
+        {
+            { PrefKey.PlayerName, "session_player_name" },
+            { PrefKey.CharIndex, "session_char_index" }
+        };
+
+    private static string Pref(PrefKey key)
+    {
+        return PrefNames[key];
+    }
+
+    private static void PrefSetString(PrefKey key, string value)
+    {
+        PlayerPrefs.SetString(Pref(key), value);
+    }
+
+    private static string PrefGetString(PrefKey key, string defaultValue)
+    {
+        return PlayerPrefs.GetString(Pref(key), defaultValue);
+    }
+
+    private static void PrefSetInt(PrefKey key, int value)
+    {
+        PlayerPrefs.SetInt(Pref(key), value);
+    }
+
+    private static int PrefGetInt(PrefKey key, int defaultValue = 0)
+    {
+        return PlayerPrefs.GetInt(Pref(key), defaultValue);
+    }
+
+    public static GameSession Instance { get; private set; }
 
     public string PlayerName;
     public string JoinCode;
@@ -14,13 +49,13 @@ public class GameSession : MonoBehaviour
     public void SetName(string value)
     {
         PlayerName = value ?? string.Empty;
-        PlayerPrefs.SetString(PlayerNameKey, PlayerName);
+        PrefSetString(PrefKey.PlayerName, PlayerName);
     }
 
     public void SetChar(int index)
     {
         CharIndex = Mathf.Max(0, index);
-        PlayerPrefs.SetInt(CharIndexKey, CharIndex);
+        PrefSetInt(PrefKey.CharIndex, CharIndex);
     }
 
     void Awake()
@@ -28,18 +63,28 @@ public class GameSession : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
+            if (Application.isPlaying)
+            {
+                DontDestroyOnLoad(gameObject);
+            }
             LoadSaved();
         }
         else
         {
-            Destroy(gameObject);
+            if (Application.isPlaying)
+            {
+                Destroy(gameObject);
+            }
+            else
+            {
+                DestroyImmediate(gameObject);
+            }
         }
     }
 
     void LoadSaved()
     {
-        PlayerName = PlayerPrefs.GetString(PlayerNameKey, string.Empty);
-        CharIndex = Mathf.Max(0, PlayerPrefs.GetInt(CharIndexKey, 0));
+        PlayerName = PrefGetString(PrefKey.PlayerName, string.Empty);
+        CharIndex = Mathf.Max(0, PrefGetInt(PrefKey.CharIndex, 0));
     }
 }

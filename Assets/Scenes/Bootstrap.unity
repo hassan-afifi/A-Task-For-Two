@@ -309,8 +309,6 @@ MonoBehaviour:
   uiAudioSource: {fileID: 1086178098}
   buttonHoverClip: {fileID: 8300000, guid: bd2d357929df7da4b9de3d36fef26172, type: 3}
   buttonClickClip: {fileID: 8300000, guid: d5ae957725183c645b041f1c08449604, type: 3}
-  buttonHoverVolume: 1
-  buttonClickVolume: 1
 --- !u!1 &1989592106
 GameObject:
   m_ObjectHideFlags: 0
@@ -447,7 +445,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: '::'
   PlayerName: 
   JoinCode: 
-  SelectedCharIndex: 0
+  CharIndex: 0
 --- !u!4 &1993686596
 Transform:
   m_ObjectHideFlags: 0

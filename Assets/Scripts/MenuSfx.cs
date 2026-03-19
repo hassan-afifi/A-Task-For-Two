@@ -1,11 +1,11 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using TMPro;
 
 public class MenuSfx : MonoBehaviour, IPointerEnterHandler, ISelectHandler, IBeginDragHandler, IEndDragHandler
 {
-    [SerializeField] private float sliderTickGap = 0.05f;
+    private float sliderTickGap = 0.01f;
 
     private Selectable selectable;
     private Button button;

@@ -3,7 +3,8 @@ using UnityEngine.SceneManagement;
 
 public class BootstrapLoader : MonoBehaviour
 {
-    private const string initialSceneName = "MainMenu";
+    private const string DefaultInitialScene = "MainMenu";
+    [SerializeField] private string initialSceneName = DefaultInitialScene;
 
     void Start()
     {
@@ -11,7 +12,7 @@ public class BootstrapLoader : MonoBehaviour
 
         if (string.IsNullOrWhiteSpace(initialSceneName))
         {
-            return;
+            throw new System.InvalidOperationException("BootstrapLoader setup failed: initialSceneName is empty.");
         }
 
         if (activeScene.name == initialSceneName)

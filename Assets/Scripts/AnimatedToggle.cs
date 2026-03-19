@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
 
@@ -12,14 +12,16 @@ public class AnimatedToggle : MonoBehaviour
 {
     [SerializeField] private Button toggleButton;
     [SerializeField] private RectTransform selectorRect;
-    [SerializeField] private float offPositionX = -60f;
-    [SerializeField] private float onPositionX = 60f;
+    private float offPositionX = -60f;
+    private float onPositionX = 60f;
 
-    public ToggleChangedEvent onValueChanged;
+    public ToggleChangedEvent onValueChanged = new ToggleChangedEvent();
     private bool isOn;
 
     void Awake()
     {
+        onValueChanged ??= new ToggleChangedEvent();
+
         if (toggleButton != null)
         {
             toggleButton.onClick.AddListener(Toggle);

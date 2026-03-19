@@ -1,39 +1,63 @@
-﻿using System.Collections.Generic;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 
 [RequireComponent(typeof(AudioSource))]
-[RequireComponent(typeof(PlayerController))]
+[RequireComponent(typeof(PlayerMovement))]
 public class PlayerAudio : NetworkBehaviour
 {
     [SerializeField] private AudioSource loopAudioSource;
     [SerializeField] private AudioClip movementLoopClip;
     [SerializeField] private AudioClip landClip;
-    [SerializeField] [Range(0f, 1f)] private float movementLoopVolume = 1f;
-    [SerializeField] [Range(0f, 1f)] private float landVolume = 1f;
 
-    private PlayerController playerController;
+    private PlayerMovement playerMovement;
     private bool wasGrounded;
     private bool groundReady;
     private bool syncLoop;
     private float syncPitch = 1f;
     private bool loopOn;
+    private bool jumpStarted;
+    private bool jumpAirborne;
+    private readonly List<ulong> targetClientIds = new List<ulong>(4);
+    private readonly ulong[] singleTargetId = new ulong[1];
 
     void Awake()
     {
-        playerController = GetComponent<PlayerController>();
+        playerMovement = GetComponent<PlayerMovement>();
+        if (playerMovement == null)
+        {
+            throw new InvalidOperationException("PlayerAudio setup failed: PlayerMovement component is missing.");
+        }
+
+        if (loopAudioSource == null)
+        {
+            loopAudioSource = GetComponent<AudioSource>();
+        }
+
+        if (loopAudioSource == null)
+        {
+            throw new InvalidOperationException("PlayerAudio setup failed: loop AudioSource reference is missing.");
+        }
 
         InitLoop();
     }
 
     public override void OnNetworkSpawn()
     {
+        if (playerMovement == null || loopAudioSource == null)
+        {
+            throw new InvalidOperationException("PlayerAudio setup failed before spawn.");
+        }
+
         InitLoop();
-        wasGrounded = (playerController != null) && playerController.IsGrounded;
+        wasGrounded = playerMovement.IsGrounded;
         groundReady = true;
         syncLoop = false;
         syncPitch = 1f;
         loopOn = false;
+        jumpStarted = false;
+        jumpAirborne = false;
         base.OnNetworkSpawn();
     }
 
@@ -42,6 +66,8 @@ public class PlayerAudio : NetworkBehaviour
         syncLoop = false;
         syncPitch = 1f;
         loopOn = false;
+        jumpStarted = false;
+        jumpAirborne = false;
         SetLoop(false, 1f);
         base.OnNetworkDespawn();
     }
@@ -53,19 +79,31 @@ public class PlayerAudio : NetworkBehaviour
             return;
         }
 
-        if (IsOwner && playerController != null)
+        if (IsOwner)
         {
-            bool grounded = playerController.IsGrounded;
+            bool grounded = playerMovement.IsGrounded;
             bool menuBlocking = PauseMenu.isOpen || ConnectionLost.IsShown;
-            bool isMoving = playerController.MoveInput.sqrMagnitude > 0.01f;
-            bool shouldPlayMovementLoop = !menuBlocking && grounded && isMoving;
-            float targetPitch = shouldPlayMovementLoop ? MovePitch() : 1f;
-            bool justLanded = groundReady && !menuBlocking && grounded && !wasGrounded;
-            bool loopStateChanged = LoopChanged(shouldPlayMovementLoop, targetPitch);
+            Vector3 move = playerMovement.FinalMove;
+            bool isMoving = (move.x * move.x + move.z * move.z) > 0.0001f;
+            bool playMoveLoop = !menuBlocking && grounded && isMoving;
+            float targetPitch = playMoveLoop ? MovePitch() : 1f;
+
+            if (playerMovement.JumpTriggered)
+            {
+                jumpStarted = true;
+            }
+
+            if (jumpStarted && !grounded)
+            {
+                jumpAirborne = true;
+            }
+
+            bool justLanded = groundReady && !menuBlocking && grounded && !wasGrounded && jumpAirborne;
+            bool loopStateChanged = LoopChanged(playMoveLoop, targetPitch);
 
             if (loopStateChanged)
             {
-                syncLoop = shouldPlayMovementLoop;
+                syncLoop = playMoveLoop;
                 syncPitch = targetPitch;
             }
 
@@ -73,6 +111,12 @@ public class PlayerAudio : NetworkBehaviour
             {
                 PlayLand();
                 PushLand();
+                jumpStarted = false;
+                jumpAirborne = false;
+            }
+            else if (grounded && !playerMovement.JumpTriggered)
+            {
+                jumpStarted = false;
             }
 
             if (loopStateChanged)
@@ -125,19 +169,14 @@ public class PlayerAudio : NetworkBehaviour
 
     float MovePitch()
     {
-        if (playerController == null)
+        if (playerMovement.IsRunning)
         {
-            return 1f;
+            return Mathf.Max(0.01f, playerMovement.sprintMultiplier);
         }
 
-        if (playerController.IsRunning)
+        if (playerMovement.IsCrouching)
         {
-            return Mathf.Max(0.01f, playerController.sprintMultiplier);
-        }
-
-        if (playerController.IsCrouching)
-        {
-            return Mathf.Max(0.01f, playerController.crouchSpeedMultiplier);
+            return Mathf.Max(0.01f, playerMovement.crouchSpeedMultiplier);
         }
 
         return 1f;
@@ -217,7 +256,7 @@ public class PlayerAudio : NetworkBehaviour
             return System.Array.Empty<ulong>();
         }
 
-        List<ulong> targetClientIds = new List<ulong>();
+        targetClientIds.Clear();
 
         foreach (ulong clientId in NetworkManager.ConnectedClientsIds)
         {
@@ -229,17 +268,23 @@ public class PlayerAudio : NetworkBehaviour
             targetClientIds.Add(clientId);
         }
 
+        if (targetClientIds.Count == 0)
+        {
+            return System.Array.Empty<ulong>();
+        }
+
+        if (targetClientIds.Count == 1)
+        {
+            singleTargetId[0] = targetClientIds[0];
+            return singleTargetId;
+        }
+
         return targetClientIds.ToArray();
     }
 
     void SetLoop(bool shouldPlay, float pitch)
     {
-        if (loopAudioSource == null)
-        {
-            return;
-        }
-
-        loopAudioSource.volume = movementLoopVolume;
+        loopAudioSource.volume = 1f;
 
         if (movementLoopClip == null)
         {
@@ -293,22 +338,17 @@ public class PlayerAudio : NetworkBehaviour
 
     void PlayLand()
     {
-        if (loopAudioSource == null || landClip == null)
+        if (landClip == null)
         {
             return;
         }
 
         loopAudioSource.pitch = 1f;
-        loopAudioSource.PlayOneShot(landClip, landVolume);
+        loopAudioSource.PlayOneShot(landClip, 1f);
     }
 
     void InitLoop()
     {
-        if (loopAudioSource == null)
-        {
-            return;
-        }
-
         loopAudioSource.playOnAwake = false;
         loopAudioSource.loop = true;
 

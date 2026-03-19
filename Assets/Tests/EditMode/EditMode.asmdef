@@ -1,0 +1,14 @@
+{
+    "name": "EditMode",
+    "references": [
+        "ATaskForTwo",
+        "Unity.TextMeshPro",
+        "Unity.Netcode.Runtime"
+    ],
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ]
+}

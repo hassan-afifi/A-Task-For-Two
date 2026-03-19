@@ -6047,13 +6047,6 @@ MonoBehaviour:
   selectorRect: {fileID: 214244840}
   maleIconGraphic: {fileID: 1096014985}
   femaleIconGraphic: {fileID: 1043345915}
-  activeIconColor: {r: 0.1, g: 0.1, b: 0.1, a: 1}
-  inactiveIconColor: {r: 0.78431374, g: 0.5882353, b: 0.19607843, a: 0.5019608}
-  malePositionX: -40
-  femalePositionX: 40
-  isMaleParam: IsMale
-  maleStateName: MaleSelected
-  femaleStateName: FemaleSelected
   genderChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -6069,7 +6062,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0472e0a7c05f00545accc06dfa7bb8a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UIButtonSfx
-  sliderTickGap: 0.05
 --- !u!1 &562747418
 GameObject:
   m_ObjectHideFlags: 0
@@ -6893,6 +6885,10 @@ PrefabInstance:
       propertyPath: m_Controller
       value: 
       objectReference: {fileID: 9100000, guid: 7eca1a1c721b8e9449abf50848fa0984, type: 2}
+    - target: {fileID: 860719271931621461, guid: 0003234426998b6499f25e9dc758f838, type: 3}
+      propertyPath: playerCamera
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 1117848730095934135, guid: 0003234426998b6499f25e9dc758f838, type: 3}
       propertyPath: m_Controller
       value: 
@@ -6917,6 +6913,14 @@ PrefabInstance:
       propertyPath: m_Enabled
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5393664281449741426, guid: 0003234426998b6499f25e9dc758f838, type: 3}
+      propertyPath: nameTagRoot
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 5393664281449741426, guid: 0003234426998b6499f25e9dc758f838, type: 3}
+      propertyPath: nameTagText
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 6896338229603633250, guid: 0003234426998b6499f25e9dc758f838, type: 3}
       propertyPath: m_Enabled
       value: 0
@@ -6929,6 +6933,9 @@ PrefabInstance:
     - {fileID: -6915479551642641944, guid: 0003234426998b6499f25e9dc758f838, type: 3}
     - {fileID: 5790783970185321781, guid: 0003234426998b6499f25e9dc758f838, type: 3}
     - {fileID: 6424648985785672379, guid: 0003234426998b6499f25e9dc758f838, type: 3}
+    - {fileID: 5393664281449741426, guid: 0003234426998b6499f25e9dc758f838, type: 3}
+    - {fileID: 860719271931621461, guid: 0003234426998b6499f25e9dc758f838, type: 3}
+    - {fileID: 5066938992201978947, guid: 0003234426998b6499f25e9dc758f838, type: 3}
     m_RemovedGameObjects:
     - {fileID: 6872606275227753620, guid: 0003234426998b6499f25e9dc758f838, type: 3}
     - {fileID: 9045620141734592746, guid: 0003234426998b6499f25e9dc758f838, type: 3}
@@ -7195,13 +7202,6 @@ MonoBehaviour:
   charactersParent: {fileID: 862034544}
   characterNameText: {fileID: 1925772432}
   genderToggleUI: {fileID: 560510097}
-  maleStartIndex: 0
-  femaleStartIndex: 3
-  charactersPerGender: 3
-  carouselRadius: 1
-  rotationDuration: 0.28
-  backScale: 0.5
-  depthScaleExponent: 1.2
 --- !u!1 &917544160
 GameObject:
   m_ObjectHideFlags: 0
