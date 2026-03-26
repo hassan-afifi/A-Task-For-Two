@@ -2,15 +2,15 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
-
 [RequireComponent(typeof(AudioSource))]
 [RequireComponent(typeof(PlayerMovement))]
+
+// Plays and synchronizes player movement and landing audio.
 public class PlayerAudio : NetworkBehaviour
 {
     [SerializeField] private AudioSource loopAudioSource;
     [SerializeField] private AudioClip movementLoopClip;
     [SerializeField] private AudioClip landClip;
-
     private PlayerMovement playerMovement;
     private bool wasGrounded;
     private bool groundReady;
@@ -21,35 +21,27 @@ public class PlayerAudio : NetworkBehaviour
     private bool jumpAirborne;
     private readonly List<ulong> targetClientIds = new List<ulong>(4);
     private readonly ulong[] singleTargetId = new ulong[1];
-
     void Awake()
     {
         playerMovement = GetComponent<PlayerMovement>();
-        if (playerMovement == null)
+        loopAudioSource ??= GetComponent<AudioSource>();
+
+        if (movementLoopClip == null)
         {
-            throw new InvalidOperationException("PlayerAudio setup failed: PlayerMovement component is missing.");
+            throw new InvalidOperationException("PlayerAudio setup failed: movementLoopClip reference is missing.");
         }
 
-        if (loopAudioSource == null)
+        if (landClip == null)
         {
-            loopAudioSource = GetComponent<AudioSource>();
-        }
-
-        if (loopAudioSource == null)
-        {
-            throw new InvalidOperationException("PlayerAudio setup failed: loop AudioSource reference is missing.");
+            throw new InvalidOperationException("PlayerAudio setup failed: landClip reference is missing.");
         }
 
         InitLoop();
     }
 
+    // Initializes audio state when the network object spawns.
     public override void OnNetworkSpawn()
     {
-        if (playerMovement == null || loopAudioSource == null)
-        {
-            throw new InvalidOperationException("PlayerAudio setup failed before spawn.");
-        }
-
         InitLoop();
         wasGrounded = playerMovement.IsGrounded;
         groundReady = true;
@@ -61,6 +53,7 @@ public class PlayerAudio : NetworkBehaviour
         base.OnNetworkSpawn();
     }
 
+    // Resets audio state when the network object despawns.
     public override void OnNetworkDespawn()
     {
         syncLoop = false;
@@ -76,6 +69,23 @@ public class PlayerAudio : NetworkBehaviour
     {
         if (!IsSpawned)
         {
+            return;
+        }
+
+        if (EndScreen.IsShown)
+        {
+            bool shouldPushStop = IsOwner && (syncLoop || loopOn);
+            syncLoop = false;
+            syncPitch = 1f;
+            jumpStarted = false;
+            jumpAirborne = false;
+
+            if (shouldPushStop)
+            {
+                PushLoop(false, 1f);
+            }
+
+            SetLoop(false, 1f);
             return;
         }
 
@@ -214,23 +224,19 @@ public class PlayerAudio : NetworkBehaviour
         }
 
         LoopClientRpc(shouldPlay, pitch,
-            new ClientRpcParams
+        new ClientRpcParams
+        {
+            Send = new ClientRpcSendParams
             {
-                Send = new ClientRpcSendParams
-                {
-                    TargetClientIds = targetClientIds
-                }
+                TargetClientIds = targetClientIds
             }
+        }
+
         );
     }
 
     void SendLandClient()
     {
-        if (landClip == null)
-        {
-            return;
-        }
-
         ulong[] targetClientIds = TargetIds();
 
         if (targetClientIds.Length == 0)
@@ -239,13 +245,14 @@ public class PlayerAudio : NetworkBehaviour
         }
 
         PlayLandClientRpc(
-            new ClientRpcParams
+        new ClientRpcParams
+        {
+            Send = new ClientRpcSendParams
             {
-                Send = new ClientRpcSendParams
-                {
-                    TargetClientIds = targetClientIds
-                }
+                TargetClientIds = targetClientIds
             }
+        }
+
         );
     }
 
@@ -253,7 +260,7 @@ public class PlayerAudio : NetworkBehaviour
     {
         if (NetworkManager == null)
         {
-            return System.Array.Empty<ulong>();
+            throw new InvalidOperationException("PlayerAudio.TargetIds failed: NetworkManager reference is missing.");
         }
 
         targetClientIds.Clear();
@@ -270,7 +277,7 @@ public class PlayerAudio : NetworkBehaviour
 
         if (targetClientIds.Count == 0)
         {
-            return System.Array.Empty<ulong>();
+            return Array.Empty<ulong>();
         }
 
         if (targetClientIds.Count == 1)
@@ -285,19 +292,6 @@ public class PlayerAudio : NetworkBehaviour
     void SetLoop(bool shouldPlay, float pitch)
     {
         loopAudioSource.volume = 1f;
-
-        if (movementLoopClip == null)
-        {
-            loopAudioSource.pitch = 1f;
-
-            if (loopOn && loopAudioSource.isPlaying)
-            {
-                loopAudioSource.Stop();
-            }
-
-            loopOn = false;
-            return;
-        }
 
         if (loopAudioSource.clip != movementLoopClip)
         {
@@ -314,6 +308,7 @@ public class PlayerAudio : NetworkBehaviour
                 {
                     loopAudioSource.Play();
                 }
+
                 return;
             }
 
@@ -338,11 +333,6 @@ public class PlayerAudio : NetworkBehaviour
 
     void PlayLand()
     {
-        if (landClip == null)
-        {
-            return;
-        }
-
         loopAudioSource.pitch = 1f;
         loopAudioSource.PlayOneShot(landClip, 1f);
     }
@@ -351,10 +341,6 @@ public class PlayerAudio : NetworkBehaviour
     {
         loopAudioSource.playOnAwake = false;
         loopAudioSource.loop = true;
-
-        if (movementLoopClip != null)
-        {
-            loopAudioSource.clip = movementLoopClip;
-        }
+        loopAudioSource.clip = movementLoopClip;
     }
 }

@@ -371,7 +371,7 @@ GameObject:
   - component: {fileID: 8129635720169165037}
   - component: {fileID: 8271969241257701707}
   - component: {fileID: 965716979239372328}
-  - component: {fileID: 862900156392513344}
+  - component: {fileID: 1016078230789108586}
   m_Layer: 0
   m_Name: Old radio_low
   m_TagString: Untagged
@@ -451,8 +451,8 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &862900156392513344
-BoxCollider:
+--- !u!64 &1016078230789108586
+MeshCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -469,9 +469,10 @@ BoxCollider:
   m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.26021984, y: 0.20618287, z: 0.17478935}
-  m_Center: {x: 0, y: 0.010489881, z: 0}
+  serializedVersion: 5
+  m_Convex: 0
+  m_CookingOptions: 30
+  m_Mesh: {fileID: 1934635422551069994, guid: bfd5b4acdcadf3e4486bd8ea16ccaeca, type: 3}
 --- !u!1 &4108517563343398159
 GameObject:
   m_ObjectHideFlags: 0
@@ -1070,7 +1071,7 @@ AudioSource:
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 8300000, guid: 07d2369c6b5d56d49aac1da5a6e97cdc, type: 3}
   m_PlayOnAwake: 1
-  m_Volume: 0.82
+  m_Volume: 0.28
   m_Pitch: 1
   Loop: 1
   Mute: 0

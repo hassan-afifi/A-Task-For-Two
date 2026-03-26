@@ -1,15 +1,18 @@
-﻿using UnityEngine;
+using System;
+using UnityEngine;
 using Unity.Netcode;
 
+// Shows a disconnect screen when the network session drops.
 public class ConnectionLost : MonoBehaviour
 {
     [SerializeField] private GameObject panel;
     [SerializeField] private Canvas hudCanvas;
 
+    // Tracks whether the disconnect screen is currently shown.
     public static bool IsShown;
-
     void Awake()
     {
+        EnsureSetup();
         HideNow();
     }
 
@@ -31,12 +34,14 @@ public class ConnectionLost : MonoBehaviour
         IsShown = false;
     }
 
+    // Returns to the main menu from the disconnect screen.
     public void ReturnToMainMenu()
     {
         HideNow();
         MenuActions.ReturnToMainMenu();
     }
 
+    // Exits the game from the disconnect screen.
     public void ExitGame()
     {
         HideNow();
@@ -86,11 +91,21 @@ public class ConnectionLost : MonoBehaviour
             return;
         }
 
+        if (EndScreen.IsShown)
+        {
+            return;
+        }
+
         Show();
     }
 
     void Show()
     {
+        if (EndScreen.IsShown)
+        {
+            return;
+        }
+
         if (IsShown)
         {
             return;
@@ -106,14 +121,9 @@ public class ConnectionLost : MonoBehaviour
 
         PauseMenu.ForceClose();
         IsShown = true;
-
-        if (panel != null)
-        {
-            panel.SetActive(true);
-        }
-
+        OptionsMenu.StopGameMusic();
+        panel.SetActive(true);
         SetHud(false);
-
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
     }
@@ -121,22 +131,25 @@ public class ConnectionLost : MonoBehaviour
     void HideNow()
     {
         IsShown = false;
-
-        if (panel != null)
-        {
-            panel.SetActive(false);
-        }
-
+        panel.SetActive(false);
         SetHud(true);
     }
 
     void SetHud(bool isVisible)
     {
-        if (hudCanvas == null)
+        hudCanvas.enabled = isVisible;
+    }
+
+    void EnsureSetup()
+    {
+        if (panel == null)
         {
-            return;
+            throw new InvalidOperationException("ConnectionLost setup failed: panel reference is missing.");
         }
 
-        hudCanvas.enabled = isVisible;
+        if (hudCanvas == null)
+        {
+            throw new InvalidOperationException("ConnectionLost setup failed: hudCanvas reference is missing.");
+        }
     }
 }

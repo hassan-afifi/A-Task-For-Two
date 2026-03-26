@@ -7,6 +7,7 @@ using UnityEngine.Events;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
+// Manages graphics, audio, HUD, and control settings.
 public class OptionsMenu : MonoBehaviour
 {
     private enum PrefKey
@@ -26,8 +27,7 @@ public class OptionsMenu : MonoBehaviour
         CrosshairColor,
         ShowFps,
         ShowPing,
-        ShowClock,
-        VolumeInit
+        ShowClock
     }
 
     private enum ModeOption
@@ -63,8 +63,7 @@ public class OptionsMenu : MonoBehaviour
         { PrefKey.CrosshairColor, "opt_crosshair_color" },
         { PrefKey.ShowFps, "opt_show_fps" },
         { PrefKey.ShowPing, "opt_show_ping" },
-        { PrefKey.ShowClock, "opt_show_system_clock" },
-        { PrefKey.VolumeInit, "opt_volume_defaults_initialized_v1" }
+        { PrefKey.ShowClock, "opt_show_system_clock" }
     };
 
     private static string Pref(PrefKey key)
@@ -99,40 +98,33 @@ public class OptionsMenu : MonoBehaviour
 
     private const int BestResolutionIndex = 0;
     private const int DefaultHudOn = 1;
+    private const int DefaultTabIndex = 0;
     private const float MinCrosshairSize = 1f;
     private const float DefaultCrosshairVal = 1f;
     private const float MaxCrosshairSize = 10f;
     private const float MinCrosshairPx = 5f;
     private const float MaxCrosshairPx = 50f;
-
     private const float MinFov = 60f;
     private const float MaxFov = 100f;
     private const float DefaultFov = 80f;
     private const float MinSensitivity = 0.01f;
     private const float MinSensitivityPercent = 1f;
     private const float DefaultSensitivityPercent = 50f;
-    private const float DefaultVolumePercent = 50f;
+    private const float DefaultVolumePercent = 100f;
     private const float FullscreenAspectTolerance = 0.01f;
     private const float MinLinearVolume = 0.0001f;
     private const float MuteDb = -80f;
-    private const string VolumeSuffix = "Volume";
-
-    [Header("Video")]
     [SerializeField] private TMP_Dropdown displayModeDropdown;
     [SerializeField] private TMP_Dropdown resolutionDropdown;
     [SerializeField] private TMP_Dropdown graphicsQualityDropdown;
     [SerializeField] private Slider cameraFovSlider;
     [SerializeField] private Slider cameraSensitivitySlider;
-
-    [Header("Audio")]
     [SerializeField] private Slider masterVolSlider;
     [SerializeField] private Slider gameSfxSlider;
     [SerializeField] private Slider menuSfxSlider;
     [SerializeField] private Slider gameMusicSlider;
     [SerializeField] private Slider menuMusicSlider;
     [SerializeField] private AudioMixer audioMixer;
-
-    [Header("HUD")]
     [SerializeField] private Slider crosshairSizeSlider;
     [SerializeField] private TMP_Dropdown crosshairColorDropdown;
     [SerializeField] private AnimatedToggle showFpsToggle;
@@ -143,36 +135,37 @@ public class OptionsMenu : MonoBehaviour
     [SerializeField] private GameObject fpsWidget;
     [SerializeField] private GameObject pingWidget;
     [SerializeField] private GameObject systemClockWidget;
-
-    [Header("External")]
     [SerializeField] private PauseMenu pauseMenuRef;
     [SerializeField] private MainMenu mainMenuRef;
-
     [Serializable]
+
+    // Describes one options tab with its button and panel.
     public class Tab
     {
+        // References the button that activates this tab.
         public Button button;
+
+        // References the panel shown when this tab is active.
         public GameObject panel;
+
+        // References the label graphic tinted by active state.
         public Graphic labelGraphic;
     }
 
-    [Header("Tabs")]
     [SerializeField] private Tab[] tabs = Array.Empty<Tab>();
-    [SerializeField] private int defaultTabIndex;
     private Color activeTextColor = new Color32(51, 51, 51, 255);
     private Color inactiveTextColor = new Color32(200, 150, 50, 255);
-
     private UnityAction[] tabClickHandlers;
     private bool tabsRegistered;
     private InputActions input;
-
     private readonly List<Vector2Int> allResList = new List<Vector2Int>();
     private readonly List<Vector2Int> resList = new List<Vector2Int>();
     private ModeOption displayModeOption = ModeOption.Borderless;
     private int manualResIndex;
     private PlayerMovement ownerPlayer;
-
-    private static readonly Color[] CrossCols =
+    private bool applyingLoadedPrefs;
+    
+    private static readonly Color[] CrossCols=
     {
         Color.white,
         Color.gray,
@@ -193,7 +186,8 @@ public class OptionsMenu : MonoBehaviour
             return;
         }
 
-        EnsureVolumeDefaults();
+        EnsureSetup();
+        input = new InputActions();
         CacheRefs();
         PopulateResolutionDropdown();
         PopulateQualityDropdown();
@@ -208,15 +202,10 @@ public class OptionsMenu : MonoBehaviour
             return;
         }
 
-        if (input == null)
-        {
-            input = new InputActions();
-        }
-
         input.System.Pause.performed += OnPauseInput;
         input.System.Enable();
         RegisterTabs();
-        ShowTab(defaultTabIndex);
+        ShowTab(DefaultTabIndex);
     }
 
     void OnDisable()
@@ -232,6 +221,7 @@ public class OptionsMenu : MonoBehaviour
             input.System.Disable();
         }
 
+        PlayerPrefs.Save();
         UnregisterTabs();
     }
 
@@ -242,8 +232,13 @@ public class OptionsMenu : MonoBehaviour
             return;
         }
 
+        if (input != null)
+        {
+            input.Dispose();
+        }
     }
 
+    // Converts sensitivity percent to runtime mouse sensitivity.
     public static float SensMap(float percent)
     {
         float clampedPercent = Mathf.Clamp(percent, MinSensitivityPercent, 100f);
@@ -251,36 +246,80 @@ public class OptionsMenu : MonoBehaviour
         return Mathf.Max(MinSensitivity, steppedPercent / 100f);
     }
 
+    // Reads the saved field-of-view value.
     public static float SavedFov(float fallback)
     {
         float defaultValue = Mathf.Clamp(fallback, MinFov, MaxFov);
         return Mathf.Clamp(PrefGetFloat(PrefKey.CameraFov, defaultValue), MinFov, MaxFov);
     }
 
+    // Reads the saved sensitivity percentage.
     public static float SavedSensPct(float fallbackPercent)
     {
         float defaultValue = Mathf.Clamp(fallbackPercent, MinSensitivityPercent, 100f);
         return Mathf.Clamp(PrefGetFloat(PrefKey.SensPct, defaultValue), MinSensitivityPercent, 100f);
     }
 
-    public void OnQualityChanged(int value) => ApplyQualityOption(value, true);
-    public void OnCrosshairColorChanged(int value) => ApplyCrosshairColor(value, true);
-    public void OnFovChanged(float value) => ApplyCameraFov(value, true);
-    public void OnSensChanged(float value) => ApplyCameraSensitivity(value, true);
-    public void OnMasterVolChanged(float value) => ApplyVolume(value, MixerName(MixerParam.Master), PrefKey.MasterVolume, true, true);
-    public void OnGameSfxChanged(float value) => ApplyVolume(value, MixerName(MixerParam.GameSfx), PrefKey.GameSfx, true, false);
-    public void OnMenuSfxChanged(float value) => ApplyVolume(value, MixerName(MixerParam.MenuSfx), PrefKey.MenuSfx, true, false);
-    public void OnGameMusicChanged(float value) => ApplyVolume(value, MixerName(MixerParam.GameMusic), PrefKey.GameMusic, true, false);
-    public void OnMenuMusicChanged(float value) => ApplyVolume(value, MixerName(MixerParam.MenuMusic), PrefKey.MenuMusic, true, false);
-    public void OnCrosshairSizeChanged(float value) => ApplyCrosshairSize(value, true);
-    public void OnShowFpsChanged(bool value) => ApplyHudWidget(fpsWidget, value, PrefKey.ShowFps, true);
-    public void OnShowPingChanged(bool value) => ApplyHudWidget(pingWidget, value, PrefKey.ShowPing, true);
-    public void OnShowClockChanged(bool value) => ApplyHudWidget(systemClockWidget, value, PrefKey.ShowClock, true);
+    // Stops game music by muting the game music mixer channel.
+    public static void StopGameMusic()
+    {
+        OptionsMenu[] menus = UnityEngine.Object.FindObjectsByType<OptionsMenu>(FindObjectsInactive.Include, FindObjectsSortMode.None);
 
+        for (int i = 0; i < menus.Length; i++)
+        {
+            if (menus[i] == null || menus[i].audioMixer == null)
+            {
+                continue;
+            }
+
+            menus[i].audioMixer.SetFloat(MixerName(MixerParam.GameMusic), MuteDb);
+            return;
+        }
+
+        throw new InvalidOperationException("OptionsMenu.StopGameMusic failed: no OptionsMenu with an assigned audioMixer was found.");
+    }
+
+    // Applies a quality option selected from the UI.
+    public void OnQualityChanged(int value) => ApplyQualityOption(value, true);
+
+    // Applies a crosshair color selected from the UI.
+    public void OnCrosshairColorChanged(int value) => ApplyCrosshairColor(value, true);
+
+    // Applies a field-of-view slider change.
+    public void OnFovChanged(float value) => ApplyCameraFov(value, true);
+
+    // Applies a sensitivity slider change.
+    public void OnSensChanged(float value) => ApplyCameraSensitivity(value, true);
+
+    // Applies a master volume slider change.
+    public void OnMasterVolChanged(float value) => ApplyVolume(value, MixerName(MixerParam.Master), PrefKey.MasterVolume, true, true);
+
+    // Applies a game SFX volume slider change.
+    public void OnGameSfxChanged(float value) => ApplyVolume(value, MixerName(MixerParam.GameSfx), PrefKey.GameSfx, true, false);
+
+    // Applies a menu SFX volume slider change.
+    public void OnMenuSfxChanged(float value) => ApplyVolume(value, MixerName(MixerParam.MenuSfx), PrefKey.MenuSfx, true, false);
+
+    // Applies a game music volume slider change.
+    public void OnGameMusicChanged(float value) => ApplyVolume(value, MixerName(MixerParam.GameMusic), PrefKey.GameMusic, true, false);
+
+    // Applies a menu music volume slider change.
+    public void OnMenuMusicChanged(float value) => ApplyVolume(value, MixerName(MixerParam.MenuMusic), PrefKey.MenuMusic, true, false);
+
+    // Applies a crosshair size slider change.
+    public void OnCrosshairSizeChanged(float value) => ApplyCrosshairSize(value, true);
+
+    // Applies the FPS widget visibility toggle.
+    public void OnShowFpsChanged(bool value) => ApplyHudWidget(fpsWidget, value, PrefKey.ShowFps, true);
+
+    // Applies the ping widget visibility toggle.
+    public void OnShowPingChanged(bool value) => ApplyHudWidget(pingWidget, value, PrefKey.ShowPing, true);
+
+    // Applies the system clock widget visibility toggle.
+    public void OnShowClockChanged(bool value) => ApplyHudWidget(systemClockWidget, value, PrefKey.ShowClock, true);
     void PopulateResolutionDropdown()
     {
         allResList.Clear();
-
         HashSet<long> seen = new HashSet<long>();
         Resolution[] resolutions = Screen.resolutions;
 
@@ -308,12 +347,14 @@ public class OptionsMenu : MonoBehaviour
             long pixelsA = (long)a.x * a.y;
             long pixelsB = (long)b.x * b.y;
             int pixelCompare = pixelsB.CompareTo(pixelsA);
+
             if (pixelCompare != 0)
             {
                 return pixelCompare;
             }
 
             int widthCompare = b.x.CompareTo(a.x);
+
             if (widthCompare != 0)
             {
                 return widthCompare;
@@ -321,7 +362,6 @@ public class OptionsMenu : MonoBehaviour
 
             return b.y.CompareTo(a.y);
         });
-
         RebuildResolutionList(GetModeOption());
     }
 
@@ -359,11 +399,6 @@ public class OptionsMenu : MonoBehaviour
 
     void RefreshResOptions()
     {
-        if (resolutionDropdown == null)
-        {
-            return;
-        }
-
         List<string> options = new List<string>(resList.Count);
 
         for (int i = 0; i < resList.Count; i++)
@@ -395,11 +430,6 @@ public class OptionsMenu : MonoBehaviour
 
     void PopulateQualityDropdown()
     {
-        if (graphicsQualityDropdown == null)
-        {
-            return;
-        }
-
         graphicsQualityDropdown.ClearOptions();
         graphicsQualityDropdown.AddOptions(new List<string>(QualitySettings.names));
     }
@@ -414,55 +444,30 @@ public class OptionsMenu : MonoBehaviour
 
     void AddDropdownHelper(TMP_Dropdown dropdown)
     {
-        if (dropdown == null)
-        {
-            return;
-        }
-
         if (dropdown.GetComponent<DropdownHelper>() == null)
         {
             dropdown.gameObject.AddComponent<DropdownHelper>();
         }
     }
 
+    // Switches back to the default tab.
     public void ResetTab()
     {
-        ShowTab(defaultTabIndex);
+        ShowTab(DefaultTabIndex);
     }
 
+    // Shows a tab by index.
     public void ShowTab(int index)
     {
-        if (tabs == null || tabs.Length == 0)
-        {
-            return;
-        }
-
         int clampedIndex = Mathf.Clamp(index, 0, tabs.Length - 1);
 
         for (int i = 0; i < tabs.Length; i++)
         {
             bool isActive = i == clampedIndex;
             Tab tab = tabs[i];
-
-            if (tab == null)
-            {
-                continue;
-            }
-
-            if (tab.panel != null)
-            {
-                tab.panel.SetActive(isActive);
-            }
-
-            if (tab.button != null)
-            {
-                tab.button.interactable = !isActive;
-            }
-
-            if (tab.labelGraphic != null)
-            {
-                tab.labelGraphic.color = isActive ? activeTextColor : inactiveTextColor;
-            }
+            tab.panel.SetActive(isActive);
+            tab.button.interactable=!isActive;
+            tab.labelGraphic.color = isActive ? activeTextColor : inactiveTextColor;
         }
     }
 
@@ -477,11 +482,6 @@ public class OptionsMenu : MonoBehaviour
 
         for (int i = 0; i < tabs.Length; i++)
         {
-            if (tabs[i] == null || tabs[i].button == null)
-            {
-                continue;
-            }
-
             int index = i;
             tabClickHandlers[i] = () => ShowTab(index);
             tabs[i].button.onClick.AddListener(tabClickHandlers[i]);
@@ -492,14 +492,14 @@ public class OptionsMenu : MonoBehaviour
 
     void UnregisterTabs()
     {
-        if (!tabsRegistered || tabs == null || tabClickHandlers == null)
+        if (!tabsRegistered)
         {
             return;
         }
 
         for (int i = 0; i < tabs.Length; i++)
         {
-            if (tabs[i] == null || tabs[i].button == null || tabClickHandlers[i] == null)
+            if (tabClickHandlers[i] == null)
             {
                 continue;
             }
@@ -543,144 +543,87 @@ public class OptionsMenu : MonoBehaviour
 
     void LoadPrefs()
     {
-        int savedModeOption = PrefHasKey(PrefKey.DisplayMode)
-            ? PrefGetInt(PrefKey.DisplayMode)
-            : (int)ModeOption.Borderless;
-        displayModeOption = ClampModeOption(savedModeOption);
+        applyingLoadedPrefs = true;
 
-        if (displayModeDropdown != null)
+        try
         {
+            int savedModeOption = PrefHasKey(PrefKey.DisplayMode) ? PrefGetInt(PrefKey.DisplayMode) : (int)ModeOption.Borderless;
+            displayModeOption = ClampModeOption(savedModeOption);
             displayModeDropdown.SetValueWithoutNotify((int)displayModeOption);
             displayModeDropdown.RefreshShownValue();
-        }
-
-        ApplyDisplayMode(displayModeOption, false);
-        RebuildResolutionList(displayModeOption);
-
-        int resolutionIndex = GetSavedResIndex();
-        manualResIndex = resolutionIndex;
-        if (resolutionDropdown != null && resList.Count > 0)
-        {
+            ApplyDisplayMode(displayModeOption, false);
+            RebuildResolutionList(displayModeOption);
+            int resolutionIndex = GetSavedResIndex();
+            manualResIndex = resolutionIndex;
             resolutionDropdown.SetValueWithoutNotify(resolutionIndex);
             resolutionDropdown.RefreshShownValue();
-        }
-
-        ApplyResMode(displayModeOption, wasBorderless: false);
-
-        int savedQualityIndex = PrefGetInt(PrefKey.QualityLevel, QualitySettings.GetQualityLevel());
-        savedQualityIndex = Mathf.Clamp(savedQualityIndex, 0, Mathf.Max(0, QualitySettings.names.Length - 1));
-        int qualityDropdownIndex = GetQualityDropdownIndex(savedQualityIndex);
-
-        if (graphicsQualityDropdown != null)
-        {
+            ApplyResMode(displayModeOption, wasBorderless: false);
+            int savedQualityIndex = PrefGetInt(PrefKey.QualityLevel, QualitySettings.GetQualityLevel());
+            savedQualityIndex = Mathf.Clamp(savedQualityIndex, 0, Mathf.Max(0, QualitySettings.names.Length - 1));
+            int qualityDropdownIndex = GetQualityDropdownIndex(savedQualityIndex);
             qualityDropdownIndex = Mathf.Clamp(qualityDropdownIndex, 0, Mathf.Max(0, graphicsQualityDropdown.options.Count - 1));
             graphicsQualityDropdown.SetValueWithoutNotify(qualityDropdownIndex);
             graphicsQualityDropdown.RefreshShownValue();
-        }
-
-        ApplyQualityOption(qualityDropdownIndex, false);
-
-        float fov = SavedFov(DefaultFov);
-        if (cameraFovSlider != null)
-        {
+            ApplyQualityOption(qualityDropdownIndex, false);
+            float fov = SavedFov(DefaultFov);
             cameraFovSlider.minValue = MinFov;
             cameraFovSlider.maxValue = MaxFov;
             cameraFovSlider.SetValueWithoutNotify(fov);
-        }
-        ApplyCameraFov(fov, false);
-
-        float sensitivityPercent = SavedSensPct(DefaultSensitivityPercent);
-        if (cameraSensitivitySlider != null)
-        {
+            ApplyCameraFov(fov, false);
+            float sensitivityPercent = SavedSensPct(DefaultSensitivityPercent);
             cameraSensitivitySlider.minValue = MinSensitivityPercent;
             cameraSensitivitySlider.maxValue = 100f;
             cameraSensitivitySlider.wholeNumbers = true;
             cameraSensitivitySlider.SetValueWithoutNotify(sensitivityPercent);
-        }
-        ApplyCameraSensitivity(sensitivityPercent, false);
-
-        float masterVolume = Mathf.Clamp(PrefGetFloat(PrefKey.MasterVolume, DefaultVolumePercent), 0f, 100f);
-        if (masterVolSlider != null)
-        {
+            ApplyCameraSensitivity(sensitivityPercent, false);
+            float masterVolume = Mathf.Clamp(PrefGetFloat(PrefKey.MasterVolume, DefaultVolumePercent), 0f, 100f);
             masterVolSlider.minValue = 0f;
             masterVolSlider.maxValue = 100f;
             masterVolSlider.SetValueWithoutNotify(masterVolume);
-        }
-        ApplyVolume(masterVolume, MixerName(MixerParam.Master), PrefKey.MasterVolume, false, true);
-
-        float gameSfxVolume = Mathf.Clamp(PrefGetFloat(PrefKey.GameSfx, DefaultVolumePercent), 0f, 100f);
-        if (gameSfxSlider != null)
-        {
+            ApplyVolume(masterVolume, MixerName(MixerParam.Master), PrefKey.MasterVolume, false, true);
+            float gameSfxVolume = Mathf.Clamp(PrefGetFloat(PrefKey.GameSfx, DefaultVolumePercent), 0f, 100f);
             gameSfxSlider.minValue = 0f;
             gameSfxSlider.maxValue = 100f;
             gameSfxSlider.SetValueWithoutNotify(gameSfxVolume);
-        }
-        ApplyVolume(gameSfxVolume, MixerName(MixerParam.GameSfx), PrefKey.GameSfx, false, false);
-
-        float menuSfxVolume = Mathf.Clamp(PrefGetFloat(PrefKey.MenuSfx, DefaultVolumePercent), 0f, 100f);
-        if (menuSfxSlider != null)
-        {
+            ApplyVolume(gameSfxVolume, MixerName(MixerParam.GameSfx), PrefKey.GameSfx, false, false);
+            float menuSfxVolume = Mathf.Clamp(PrefGetFloat(PrefKey.MenuSfx, DefaultVolumePercent), 0f, 100f);
             menuSfxSlider.minValue = 0f;
             menuSfxSlider.maxValue = 100f;
             menuSfxSlider.SetValueWithoutNotify(menuSfxVolume);
-        }
-        ApplyVolume(menuSfxVolume, MixerName(MixerParam.MenuSfx), PrefKey.MenuSfx, false, false);
-
-        float gameMusicVolume = Mathf.Clamp(PrefGetFloat(PrefKey.GameMusic, DefaultVolumePercent), 0f, 100f);
-        if (gameMusicSlider != null)
-        {
+            ApplyVolume(menuSfxVolume, MixerName(MixerParam.MenuSfx), PrefKey.MenuSfx, false, false);
+            float gameMusicVolume = Mathf.Clamp(PrefGetFloat(PrefKey.GameMusic, DefaultVolumePercent), 0f, 100f);
             gameMusicSlider.minValue = 0f;
             gameMusicSlider.maxValue = 100f;
             gameMusicSlider.SetValueWithoutNotify(gameMusicVolume);
-        }
-        ApplyVolume(gameMusicVolume, MixerName(MixerParam.GameMusic), PrefKey.GameMusic, false, false);
-
-        float menuMusicVolume = Mathf.Clamp(PrefGetFloat(PrefKey.MenuMusic, DefaultVolumePercent), 0f, 100f);
-        if (menuMusicSlider != null)
-        {
+            ApplyVolume(gameMusicVolume, MixerName(MixerParam.GameMusic), PrefKey.GameMusic, false, false);
+            float menuMusicVolume = Mathf.Clamp(PrefGetFloat(PrefKey.MenuMusic, DefaultVolumePercent), 0f, 100f);
             menuMusicSlider.minValue = 0f;
             menuMusicSlider.maxValue = 100f;
             menuMusicSlider.SetValueWithoutNotify(menuMusicVolume);
-        }
-        ApplyVolume(menuMusicVolume, MixerName(MixerParam.MenuMusic), PrefKey.MenuMusic, false, false);
-
-        float crosshairSize = Mathf.Clamp(PrefGetFloat(PrefKey.CrosshairSize, DefaultCrosshairVal), MinCrosshairSize, MaxCrosshairSize);
-        if (crosshairSizeSlider != null)
-        {
+            ApplyVolume(menuMusicVolume, MixerName(MixerParam.MenuMusic), PrefKey.MenuMusic, false, false);
+            float crosshairSize = Mathf.Clamp(PrefGetFloat(PrefKey.CrosshairSize, DefaultCrosshairVal), MinCrosshairSize, MaxCrosshairSize);
             crosshairSizeSlider.minValue = MinCrosshairSize;
             crosshairSizeSlider.maxValue = MaxCrosshairSize;
             crosshairSizeSlider.SetValueWithoutNotify(crosshairSize);
-        }
-        ApplyCrosshairSize(crosshairSize, false);
-
-        int crosshairColorIndex = Mathf.Clamp(PrefGetInt(PrefKey.CrosshairColor, 0), 0, CrossCols.Length - 1);
-        if (crosshairColorDropdown != null)
-        {
+            ApplyCrosshairSize(crosshairSize, false);
+            int crosshairColorIndex = Mathf.Clamp(PrefGetInt(PrefKey.CrosshairColor, 0), 0, CrossCols.Length - 1);
             crosshairColorDropdown.SetValueWithoutNotify(crosshairColorIndex);
             crosshairColorDropdown.RefreshShownValue();
-        }
-        ApplyCrosshairColor(crosshairColorIndex, false);
-
-        bool showFps = PrefGetInt(PrefKey.ShowFps, DefaultHudOn) == 1;
-        if (showFpsToggle != null)
-        {
+            ApplyCrosshairColor(crosshairColorIndex, false);
+            bool showFps = PrefGetInt(PrefKey.ShowFps, DefaultHudOn) == 1;
             showFpsToggle.SetValue(showFps, false);
-        }
-        ApplyHudWidget(fpsWidget, showFps, PrefKey.ShowFps, false);
-
-        bool showPing = PrefGetInt(PrefKey.ShowPing, DefaultHudOn) == 1;
-        if (showPingToggle != null)
-        {
+            ApplyHudWidget(fpsWidget, showFps, PrefKey.ShowFps, false);
+            bool showPing = PrefGetInt(PrefKey.ShowPing, DefaultHudOn) == 1;
             showPingToggle.SetValue(showPing, false);
-        }
-        ApplyHudWidget(pingWidget, showPing, PrefKey.ShowPing, false);
-
-        bool showSystemClock = PrefGetInt(PrefKey.ShowClock, DefaultHudOn) == 1;
-        if (showSystemClockToggle != null)
-        {
+            ApplyHudWidget(pingWidget, showPing, PrefKey.ShowPing, false);
+            bool showSystemClock = PrefGetInt(PrefKey.ShowClock, DefaultHudOn) == 1;
             showSystemClockToggle.SetValue(showSystemClock, false);
+            ApplyHudWidget(systemClockWidget, showSystemClock, PrefKey.ShowClock, false);
         }
-        ApplyHudWidget(systemClockWidget, showSystemClock, PrefKey.ShowClock, false);
+        finally
+        {
+            applyingLoadedPrefs = false;
+        }
     }
 
     int GetSavedResIndex()
@@ -697,7 +640,6 @@ public class OptionsMenu : MonoBehaviour
 
         int defaultWidth = Screen.width;
         int defaultHeight = Screen.height;
-
         int savedWidth = PrefGetInt(PrefKey.ResolutionWidth, defaultWidth);
         int savedHeight = PrefGetInt(PrefKey.ResolutionHeight, defaultHeight);
 
@@ -717,6 +659,7 @@ public class OptionsMenu : MonoBehaviour
             long dx = resList[i].x - defaultWidth;
             long dy = resList[i].y - defaultHeight;
             long distance = dx * dx + dy * dy;
+
             if (distance < closestDistance)
             {
                 closestDistance = distance;
@@ -736,27 +679,20 @@ public class OptionsMenu : MonoBehaviour
     {
         switch (option)
         {
-            case ModeOption.Borderless:
-                return FullScreenMode.FullScreenWindow;
-            case ModeOption.Fullscreen:
+        case ModeOption.Borderless: return FullScreenMode.FullScreenWindow;
+        case ModeOption.Fullscreen:
 #if UNITY_STANDALONE_WIN
-                return FullScreenMode.ExclusiveFullScreen;
+            return FullScreenMode.ExclusiveFullScreen;
 #else
-                return FullScreenMode.FullScreenWindow;
+            return FullScreenMode.FullScreenWindow;
 #endif
-            default:
-                return FullScreenMode.Windowed;
+        default: return FullScreenMode.Windowed;
         }
     }
 
     ModeOption GetModeOption()
     {
-        if (displayModeDropdown != null)
-        {
-            return ClampModeOption(displayModeDropdown.value);
-        }
-
-        return ClampModeOption(PrefGetInt(PrefKey.DisplayMode, (int)ModeOption.Borderless));
+        return ClampModeOption(displayModeDropdown.value);
     }
 
     FullScreenMode GetMode()
@@ -776,27 +712,19 @@ public class OptionsMenu : MonoBehaviour
 
     int GetCurrentResIndex()
     {
-        if (resolutionDropdown != null)
-        {
-            return Mathf.Clamp(resolutionDropdown.value, 0, Mathf.Max(0, resList.Count - 1));
-        }
-
-        return GetSavedResIndex();
+        return Mathf.Clamp(resolutionDropdown.value, 0, Mathf.Max(0, resList.Count - 1));
     }
 
     void SetResolutionInteractable(bool isInteractable)
     {
-        if (resolutionDropdown != null)
-        {
-            resolutionDropdown.interactable = isInteractable;
-        }
+        resolutionDropdown.interactable = isInteractable;
     }
 
     void SetResolutionValue(int index)
     {
-        if (resolutionDropdown == null || resList.Count == 0)
+        if (resList.Count == 0)
         {
-            return;
+            throw new InvalidOperationException("OptionsMenu state failed: resolution list is empty.");
         }
 
         int clampedIndex = Mathf.Clamp(index, 0, resList.Count - 1);
@@ -821,19 +749,16 @@ public class OptionsMenu : MonoBehaviour
         }
 
         SetResolutionInteractable(true);
-        int targetIndex = wasBorderless
-            ? Mathf.Clamp(manualResIndex, 0, resList.Count - 1)
-            : GetCurrentResIndex();
-
+        int targetIndex = wasBorderless ? Mathf.Clamp(manualResIndex, 0, resList.Count - 1) : GetCurrentResIndex();
         SetResolutionValue(targetIndex);
         ApplyResolution(targetIndex, false);
     }
 
     int GetQualityDropdownIndex(int qualityIndex)
     {
-        if (graphicsQualityDropdown == null || graphicsQualityDropdown.options.Count == 0)
+        if (graphicsQualityDropdown.options.Count == 0)
         {
-            return qualityIndex;
+            throw new InvalidOperationException("OptionsMenu setup failed: graphicsQualityDropdown options are unavailable.");
         }
 
         return Mathf.Clamp(qualityIndex, 0, graphicsQualityDropdown.options.Count - 1);
@@ -844,6 +769,7 @@ public class OptionsMenu : MonoBehaviour
         return Mathf.Clamp(optionIndex, 0, Mathf.Max(0, QualitySettings.names.Length - 1));
     }
 
+    // Applies a display mode change from the dropdown.
     public void OnDisplayModeChanged(int optionIndex)
     {
         ModeOption clampedOption = ClampModeOption(optionIndex);
@@ -861,6 +787,7 @@ public class OptionsMenu : MonoBehaviour
         displayModeOption = clampedOption;
     }
 
+    // Applies a resolution change from the dropdown.
     public void OnResolutionChanged(int optionIndex)
     {
         if (IsBorderlessOption(displayModeOption))
@@ -911,7 +838,7 @@ public class OptionsMenu : MonoBehaviour
 
     void ApplyQualityOption(int optionIndex, bool save)
     {
-        int qualityIndex = GetQualityFromOption(Mathf.Clamp(optionIndex, 0, Mathf.Max(0, graphicsQualityDropdown != null ? graphicsQualityDropdown.options.Count - 1 : QualitySettings.names.Length - 1)));
+        int qualityIndex = GetQualityFromOption(Mathf.Clamp(optionIndex, 0, Mathf.Max(0, graphicsQualityDropdown.options.Count - 1)));
         qualityIndex = Mathf.Clamp(qualityIndex, 0, Mathf.Max(0, QualitySettings.names.Length - 1));
         QualitySettings.SetQualityLevel(qualityIndex, true);
 
@@ -925,12 +852,13 @@ public class OptionsMenu : MonoBehaviour
     {
         float clamped = Mathf.Clamp(fov, MinFov, MaxFov);
         PlayerMovement owner = GetOwnerPlayer();
+
         if (owner != null && owner.PlayerCamera != null)
         {
             owner.PlayerCamera.fieldOfView = clamped;
         }
 
-        if (save)
+        if (save && !applyingLoadedPrefs)
         {
             PrefSetFloat(PrefKey.CameraFov, clamped);
         }
@@ -942,12 +870,13 @@ public class OptionsMenu : MonoBehaviour
         float steppedPercent = Mathf.Round(clampedPercent);
         float mappedSensitivity = SensMap(steppedPercent);
         PlayerMovement owner = GetOwnerPlayer();
+
         if (owner != null)
         {
             owner.mouseSensitivity = mappedSensitivity;
         }
 
-        if (save)
+        if (save && !applyingLoadedPrefs)
         {
             PrefSetFloat(PrefKey.SensPct, steppedPercent);
         }
@@ -957,18 +886,7 @@ public class OptionsMenu : MonoBehaviour
     {
         float clamped = Mathf.Clamp(percentValue, 0f, 100f);
         float normalized = clamped / 100f;
-        bool appliedMixer = false;
-
-        if (audioMixer != null)
-        {
-            appliedMixer = SetMixerVol(exposedParamName, normalized);
-
-            if (!appliedMixer)
-            {
-                string alternateParamName = GetAltVolParamName(exposedParamName);
-                appliedMixer = SetMixerVol(alternateParamName, normalized);
-            }
-        }
+        bool appliedMixer = SetMixerVol(exposedParamName, normalized);
 
         if (fallbackToListener && !appliedMixer)
         {
@@ -983,46 +901,24 @@ public class OptionsMenu : MonoBehaviour
 
     bool SetMixerVol(string paramName, float normalized)
     {
-        if (audioMixer == null || string.IsNullOrWhiteSpace(paramName))
+        if (string.IsNullOrWhiteSpace(paramName))
         {
-            return false;
+            throw new ArgumentException("OptionsMenu.SetMixerVol failed: mixer parameter name is empty.", nameof(paramName));
         }
 
         return audioMixer.SetFloat(paramName.Trim(), LinearToDecibel(normalized));
-    }
-
-    string GetAltVolParamName(string paramName)
-    {
-        if (string.IsNullOrWhiteSpace(paramName))
-        {
-            return string.Empty;
-        }
-
-        string trimmed = paramName.Trim();
-        if (trimmed.EndsWith(VolumeSuffix, StringComparison.OrdinalIgnoreCase))
-        {
-            return trimmed.Substring(0, trimmed.Length - VolumeSuffix.Length);
-        }
-
-        return trimmed + VolumeSuffix;
     }
 
     static string MixerName(MixerParam param)
     {
         switch (param)
         {
-            case MixerParam.Master:
-                return "Master";
-            case MixerParam.GameSfx:
-                return "GameSFX";
-            case MixerParam.MenuSfx:
-                return "MenuSFX";
-            case MixerParam.GameMusic:
-                return "GameMusic";
-            case MixerParam.MenuMusic:
-                return "MenuMusic";
-            default:
-                throw new ArgumentOutOfRangeException(nameof(param), param, null);
+        case MixerParam.Master: return "Master";
+        case MixerParam.GameSfx: return "GameSFX";
+        case MixerParam.MenuSfx: return "MenuSFX";
+        case MixerParam.GameMusic: return "GameMusic";
+        case MixerParam.MenuMusic: return "MenuMusic";
+        default: throw new ArgumentOutOfRangeException(nameof(param), param, null);
         }
     }
 
@@ -1033,14 +929,11 @@ public class OptionsMenu : MonoBehaviour
             return ownerPlayer;
         }
 
-        PlayerMovement[] players = UnityEngine.Object.FindObjectsByType<PlayerMovement>(
-            FindObjectsInactive.Exclude,
-            FindObjectsSortMode.None
-        );
+        PlayerMovement[] players = UnityEngine.Object.FindObjectsByType<PlayerMovement>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
 
         for (int i = 0; i < players.Length; i++)
         {
-            if (players[i] != null && players[i].IsOwner)
+            if (players[i].IsOwner)
             {
                 ownerPlayer = players[i];
                 return ownerPlayer;
@@ -1075,7 +968,7 @@ public class OptionsMenu : MonoBehaviour
             crosshairRect.sizeDelta = size;
         }
 
-        if (save)
+        if (save && !applyingLoadedPrefs)
         {
             PrefSetFloat(PrefKey.CrosshairSize, clamped);
         }
@@ -1109,36 +1002,79 @@ public class OptionsMenu : MonoBehaviour
         }
     }
 
-    void EnsureVolumeDefaults()
+    void EnsureSetup()
     {
-        if (PrefGetInt(PrefKey.VolumeInit, 0) == 1)
+        if (displayModeDropdown == null)
         {
-            return;
+            throw new InvalidOperationException("OptionsMenu setup failed: displayModeDropdown reference is missing.");
         }
 
-        bool hasVolumeKey =
-            PrefHasKey(PrefKey.MasterVolume) ||
-            PrefHasKey(PrefKey.GameSfx) ||
-            PrefHasKey(PrefKey.MenuSfx) ||
-            PrefHasKey(PrefKey.GameMusic) ||
-            PrefHasKey(PrefKey.MenuMusic);
-
-        bool allVolumesZero =
-            Mathf.Approximately(PrefGetFloat(PrefKey.MasterVolume, 0f), 0f) &&
-            Mathf.Approximately(PrefGetFloat(PrefKey.GameSfx, 0f), 0f) &&
-            Mathf.Approximately(PrefGetFloat(PrefKey.MenuSfx, 0f), 0f) &&
-            Mathf.Approximately(PrefGetFloat(PrefKey.GameMusic, 0f), 0f) &&
-            Mathf.Approximately(PrefGetFloat(PrefKey.MenuMusic, 0f), 0f);
-
-        if (!hasVolumeKey || allVolumesZero)
+        if (resolutionDropdown == null)
         {
-            PrefSetFloat(PrefKey.MasterVolume, DefaultVolumePercent);
-            PrefSetFloat(PrefKey.GameSfx, DefaultVolumePercent);
-            PrefSetFloat(PrefKey.MenuSfx, DefaultVolumePercent);
-            PrefSetFloat(PrefKey.GameMusic, DefaultVolumePercent);
-            PrefSetFloat(PrefKey.MenuMusic, DefaultVolumePercent);
+            throw new InvalidOperationException("OptionsMenu setup failed: resolutionDropdown reference is missing.");
         }
 
-        PrefSetInt(PrefKey.VolumeInit, 1);
+        if (graphicsQualityDropdown == null)
+        {
+            throw new InvalidOperationException("OptionsMenu setup failed: graphicsQualityDropdown reference is missing.");
+        }
+
+        if (cameraFovSlider == null)
+        {
+            throw new InvalidOperationException("OptionsMenu setup failed: cameraFovSlider reference is missing.");
+        }
+
+        if (cameraSensitivitySlider == null)
+        {
+            throw new InvalidOperationException("OptionsMenu setup failed: cameraSensitivitySlider reference is missing.");
+        }
+
+        if (masterVolSlider == null || gameSfxSlider == null || menuSfxSlider == null || gameMusicSlider == null || menuMusicSlider == null)
+        {
+            throw new InvalidOperationException("OptionsMenu setup failed: one or more audio slider references are missing.");
+        }
+
+        if (audioMixer == null)
+        {
+            throw new InvalidOperationException("OptionsMenu setup failed: audioMixer reference is missing.");
+        }
+
+        if (crosshairSizeSlider == null || crosshairColorDropdown == null)
+        {
+            throw new InvalidOperationException("OptionsMenu setup failed: crosshair controls are missing.");
+        }
+
+        if (showFpsToggle == null || showPingToggle == null || showSystemClockToggle == null)
+        {
+            throw new InvalidOperationException("OptionsMenu setup failed: HUD toggle references are missing.");
+        }
+
+        if (tabs == null || tabs.Length == 0)
+        {
+            throw new InvalidOperationException("OptionsMenu setup failed: tabs are not configured.");
+        }
+
+        for (int i = 0; i < tabs.Length; i++)
+        {
+            if (tabs[i] == null)
+            {
+                throw new InvalidOperationException($"OptionsMenu setup failed: tabs[{i}] is null.");
+            }
+
+            if (tabs[i].button == null)
+            {
+                throw new InvalidOperationException($"OptionsMenu setup failed: tabs[{i}].button is missing.");
+            }
+
+            if (tabs[i].panel == null)
+            {
+                throw new InvalidOperationException($"OptionsMenu setup failed: tabs[{i}].panel is missing.");
+            }
+
+            if (tabs[i].labelGraphic == null)
+            {
+                throw new InvalidOperationException($"OptionsMenu setup failed: tabs[{i}].labelGraphic is missing.");
+            }
+        }
     }
 }

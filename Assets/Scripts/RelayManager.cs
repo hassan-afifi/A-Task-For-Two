@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+using System;
+using System.Collections;
+using UnityEngine;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using Unity.Services.Core;
@@ -8,11 +10,11 @@ using Unity.Services.Relay.Models;
 using UnityEngine.SceneManagement;
 using System.Threading.Tasks;
 
+// Creates and joins relay sessions, then starts Netcode.
 public class RelayManager : MonoBehaviour
 {
-    [SerializeField] private string gameSceneName = "Game";
+    private string gameSceneName = "Game";
     private bool isBusy;
-
     void OnDestroy()
     {
         if (NetworkManager.Singleton != null)
@@ -34,33 +36,34 @@ public class RelayManager : MonoBehaviour
         }
     }
 
+    // Allocates relay data and starts hosting.
     public async Task CreateGame()
     {
         if (isBusy)
         {
-            throw new System.InvalidOperationException("CreateGame failed: relay operation is already in progress.");
+            throw new InvalidOperationException("CreateGame failed: relay operation is already in progress.");
         }
 
         if (GameSession.Instance == null)
         {
-            throw new System.InvalidOperationException("CreateGame failed: GameSession.Instance is missing.");
+            throw new InvalidOperationException("CreateGame failed: GameSession.Instance is missing.");
         }
 
         if (NetworkManager.Singleton == null)
         {
-            throw new System.InvalidOperationException("CreateGame failed: NetworkManager.Singleton is missing.");
+            throw new InvalidOperationException("CreateGame failed: NetworkManager.Singleton is missing.");
         }
 
         if (string.IsNullOrWhiteSpace(gameSceneName))
         {
-            throw new System.InvalidOperationException("RelayManager setup failed: gameSceneName is empty.");
+            throw new InvalidOperationException("RelayManager setup failed: gameSceneName is empty.");
         }
 
         UnityTransport transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
 
         if (transport == null)
         {
-            throw new System.InvalidOperationException("CreateGame failed: UnityTransport component is missing on NetworkManager.");
+            throw new InvalidOperationException("CreateGame failed: UnityTransport component is missing on NetworkManager.");
         }
 
         try
@@ -75,7 +78,7 @@ public class RelayManager : MonoBehaviour
 
             if (!NetworkManager.Singleton.StartHost())
             {
-                throw new System.InvalidOperationException("CreateGame failed: NetworkManager.StartHost returned false.");
+                throw new InvalidOperationException("CreateGame failed: NetworkManager.StartHost returned false.");
             }
 
             NetworkManager.Singleton.OnClientConnectedCallback -= OnClientJoin;
@@ -88,28 +91,29 @@ public class RelayManager : MonoBehaviour
         }
     }
 
+    // Joins a relay session and starts the client.
     public async Task JoinGame(string code)
     {
         if (isBusy)
         {
-            throw new System.InvalidOperationException("JoinGame failed: relay operation is already in progress.");
+            throw new InvalidOperationException("JoinGame failed: relay operation is already in progress.");
         }
 
         if (string.IsNullOrWhiteSpace(code))
         {
-            throw new System.ArgumentException("JoinGame failed: join code is empty.", nameof(code));
+            throw new ArgumentException("JoinGame failed: join code is empty.", nameof(code));
         }
 
         if (NetworkManager.Singleton == null)
         {
-            throw new System.InvalidOperationException("JoinGame failed: NetworkManager.Singleton is missing.");
+            throw new InvalidOperationException("JoinGame failed: NetworkManager.Singleton is missing.");
         }
 
         UnityTransport transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
 
         if (transport == null)
         {
-            throw new System.InvalidOperationException("JoinGame failed: UnityTransport component is missing on NetworkManager.");
+            throw new InvalidOperationException("JoinGame failed: UnityTransport component is missing on NetworkManager.");
         }
 
         string cleanedCode = code.Trim().ToUpperInvariant();
@@ -124,7 +128,7 @@ public class RelayManager : MonoBehaviour
 
             if (!NetworkManager.Singleton.StartClient())
             {
-                throw new System.InvalidOperationException("JoinGame failed: NetworkManager.StartClient returned false.");
+                throw new InvalidOperationException("JoinGame failed: NetworkManager.StartClient returned false.");
             }
         }
         finally
@@ -143,7 +147,7 @@ public class RelayManager : MonoBehaviour
         StartCoroutine(EnsureOwner(clientId));
     }
 
-    System.Collections.IEnumerator EnsureOwner(ulong clientId)
+    IEnumerator EnsureOwner(ulong clientId)
     {
         const int maxFrames = 120;
         int frameCount = 0;

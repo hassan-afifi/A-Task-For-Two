@@ -11,6 +11,7 @@ public class AnimatedTogglePlayTests
     public IEnumerator StartsOn_MovesSelectorToOnPosition()
     {
         var root = new GameObject("AnimatedToggle_Test");
+        root.SetActive(false);
         var button = root.AddComponent<Button>();
         var selector = new GameObject("Selector").AddComponent<RectTransform>();
         selector.SetParent(root.transform, false);
@@ -18,7 +19,7 @@ public class AnimatedTogglePlayTests
         var toggle = root.AddComponent<AnimatedToggle>();
         SetField(toggle, "toggleButton", button);
         SetField(toggle, "selectorRect", selector);
-        Invoke(toggle, "Awake");
+        root.SetActive(true);
 
         yield return null;
 
@@ -31,6 +32,7 @@ public class AnimatedTogglePlayTests
     public IEnumerator ButtonClick_TogglesState_InvokesEvent()
     {
         var root = new GameObject("AnimatedToggle_Test");
+        root.SetActive(false);
         var button = root.AddComponent<Button>();
         var selector = new GameObject("Selector").AddComponent<RectTransform>();
         selector.SetParent(root.transform, false);
@@ -38,7 +40,7 @@ public class AnimatedTogglePlayTests
         var toggle = root.AddComponent<AnimatedToggle>();
         SetField(toggle, "toggleButton", button);
         SetField(toggle, "selectorRect", selector);
-        Invoke(toggle, "Awake");
+        root.SetActive(true);
 
         yield return null;
 
@@ -60,20 +62,17 @@ public class AnimatedTogglePlayTests
     }
 
     [UnityTest]
-    public IEnumerator MissingSelector_DoesNotThrow()
+    public IEnumerator MissingSelector_ThrowsSetupError()
     {
         var root = new GameObject("AnimatedToggle_Test");
+        root.SetActive(false);
         var button = root.AddComponent<Button>();
         var toggle = root.AddComponent<AnimatedToggle>();
         SetField(toggle, "toggleButton", button);
-        Invoke(toggle, "Awake");
-
-        yield return null;
-
-        Assert.DoesNotThrow(() => toggle.SetValue(false));
-        Assert.DoesNotThrow(() => button.onClick.Invoke());
+        Assert.Throws<TargetInvocationException>(() => Invoke(toggle, "Awake"));
 
         Object.Destroy(root);
+        yield return null;
     }
 
     private static void SetField(object target, string fieldName, object value)

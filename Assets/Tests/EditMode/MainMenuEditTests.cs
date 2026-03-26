@@ -1,3 +1,4 @@
+using System;
 using System.Reflection;
 using NUnit.Framework;
 using TMPro;
@@ -58,10 +59,10 @@ public class MainMenuEditTests
         Assert.That(createButton.interactable, Is.False);
         Assert.That(joinButton.interactable, Is.False);
 
-        Object.DestroyImmediate(nameInput.gameObject);
-        Object.DestroyImmediate(codeInput.gameObject);
-        Object.DestroyImmediate(createButton.gameObject);
-        Object.DestroyImmediate(joinButton.gameObject);
+        UnityEngine.Object.DestroyImmediate(nameInput.gameObject);
+        UnityEngine.Object.DestroyImmediate(codeInput.gameObject);
+        UnityEngine.Object.DestroyImmediate(createButton.gameObject);
+        UnityEngine.Object.DestroyImmediate(joinButton.gameObject);
     }
 
     private static void SetField(object target, string fieldName, object value)
@@ -79,7 +80,7 @@ public class MainMenuEditTests
         return (T)result;
     }
 
-    private sealed class ComponentScope<T> : System.IDisposable where T : Component
+    private sealed class ComponentScope<T> : IDisposable where T : Component
     {
         public T Component { get; }
         private readonly GameObject gameObject;
@@ -94,7 +95,7 @@ public class MainMenuEditTests
         {
             if (gameObject != null)
             {
-                Object.DestroyImmediate(gameObject);
+                UnityEngine.Object.DestroyImmediate(gameObject);
             }
         }
     }

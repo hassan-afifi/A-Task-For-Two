@@ -1,3 +1,4 @@
+using System;
 using System.Reflection;
 using NUnit.Framework;
 using TMPro;
@@ -61,7 +62,7 @@ public class PlayerComponentsEditTests
         Invoke<object>(scope.Component, "ShowName", "  12345678901  ");
         Assert.That(text.text, Is.EqualTo("1234567890"));
 
-        Object.DestroyImmediate(textGo);
+        UnityEngine.Object.DestroyImmediate(textGo);
     }
 
     private static void SetField(object target, string fieldName, object value)
@@ -86,7 +87,7 @@ public class PlayerComponentsEditTests
         return (T)result;
     }
 
-    private sealed class ComponentScope<T> : System.IDisposable where T : Component
+    private sealed class ComponentScope<T> : IDisposable where T : Component
     {
         public T Component { get; }
         private readonly GameObject gameObject;
@@ -101,7 +102,7 @@ public class PlayerComponentsEditTests
         {
             if (gameObject != null)
             {
-                Object.DestroyImmediate(gameObject);
+                UnityEngine.Object.DestroyImmediate(gameObject);
             }
         }
     }

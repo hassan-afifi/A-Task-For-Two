@@ -1,19 +1,18 @@
+using System;
 using System.Globalization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
+// Keeps a slider and numeric input field in sync.
 public class SliderSync : MonoBehaviour
 {
     [SerializeField] private Slider slider;
     [SerializeField] private TMP_InputField inputField;
-
     private bool suppressCallbacks;
-
     void Awake()
     {
         EnsureSetup();
-
         slider.onValueChanged.AddListener(OnSliderChanged);
         inputField.onEndEdit.AddListener(OnInputEdit);
     }
@@ -58,8 +57,7 @@ public class SliderSync : MonoBehaviour
             return;
         }
 
-        bool valid = float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float parsedValue)
-            || float.TryParse(text, out parsedValue);
+        bool valid = float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float parsedValue) || float.TryParse(text, out parsedValue);
 
         if (!valid)
         {
@@ -69,7 +67,6 @@ public class SliderSync : MonoBehaviour
 
         float clamped = Mathf.Clamp(parsedValue, slider.minValue, slider.maxValue);
         clamped = Mathf.Round(clamped);
-
         suppressCallbacks = true;
         slider.value = clamped;
         inputField.SetTextWithoutNotify(FormatValue(clamped));
@@ -90,12 +87,12 @@ public class SliderSync : MonoBehaviour
     {
         if (slider == null)
         {
-            throw new System.InvalidOperationException("SliderSync setup failed: slider reference is missing.");
+            throw new InvalidOperationException("SliderSync setup failed: slider reference is missing.");
         }
 
         if (inputField == null)
         {
-            throw new System.InvalidOperationException("SliderSync setup failed: inputField reference is missing.");
+            throw new InvalidOperationException("SliderSync setup failed: inputField reference is missing.");
         }
     }
 }

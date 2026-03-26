@@ -1,8 +1,11 @@
-﻿using UnityEngine;
+using UnityEngine;
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using Unity.Netcode;
 using TMPro;
 
+// Handles character carousel selection in the menu.
 public class CharacterSelection : MonoBehaviour
 {
     private const string CloneSuffix = "(Clone)";
@@ -16,16 +19,17 @@ public class CharacterSelection : MonoBehaviour
     private float rotationDuration = 0.28f;
     private float backScale = 0.5f;
     private float depthScaleExponent = 1.2f;
-    private GameObject[] characters;
-    private Vector3[] baseScales;
+    private GameObject[] characters = Array.Empty<GameObject>();
+    private Vector3[] baseScales = Array.Empty<Vector3>();
     private Vector3 frontPos;
     private int index;
     private int rotVal = 1;
     private bool maleGroup = true;
     private bool inTransit;
-
     void Start()
     {
+        EnsureSetup();
+
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && GetComponent<NetworkObject>() != null)
         {
             enabled = false;
@@ -87,9 +91,10 @@ public class CharacterSelection : MonoBehaviour
         SaveSelection();
     }
 
+    // Selects the previous character in the active group.
     public void PrevChar()
     {
-        if (characters == null || characters.Length == 0 || inTransit)
+        if (characters.Length == 0 || inTransit)
         {
             return;
         }
@@ -102,9 +107,10 @@ public class CharacterSelection : MonoBehaviour
         StartCoroutine(RotateCarousel(-1));
     }
 
+    // Selects the next character in the active group.
     public void NextChar()
     {
-        if (characters == null || characters.Length == 0 || inTransit)
+        if (characters.Length == 0 || inTransit)
         {
             return;
         }
@@ -117,16 +123,16 @@ public class CharacterSelection : MonoBehaviour
         StartCoroutine(RotateCarousel(1));
     }
 
-    System.Collections.IEnumerator RotateCarousel(int step)
+    IEnumerator RotateCarousel(int step)
     {
         int groupCount = GroupCount();
+
         if (groupCount <= 1)
         {
             yield break;
         }
 
         inTransit = true;
-
         int oldSlot = CurSlot();
         int oldCurrent = SlotIndex(oldSlot);
         int oldPrev = SlotIndex(oldSlot - 1);
@@ -165,7 +171,6 @@ public class CharacterSelection : MonoBehaviour
             startAngles[oldPrev] = 120f;
             startAngles[oldCurrent] = 0f;
             startAngles[oldNext] = -120f;
-
             endAngles[oldPrev] = 240f;
             endAngles[oldCurrent] = 120f;
             endAngles[oldNext] = 0f;
@@ -175,7 +180,6 @@ public class CharacterSelection : MonoBehaviour
             startAngles[oldPrev] = 120f;
             startAngles[oldCurrent] = 0f;
             startAngles[oldNext] = -120f;
-
             endAngles[oldPrev] = 0f;
             endAngles[oldCurrent] = -120f;
             endAngles[oldNext] = -240f;
@@ -200,6 +204,7 @@ public class CharacterSelection : MonoBehaviour
                 float angle = Mathf.LerpUnclamped(startAngles[i], endAngles[i], eased);
                 ApplyPose(i, angle);
             }
+
             yield return null;
         }
 
@@ -213,7 +218,7 @@ public class CharacterSelection : MonoBehaviour
 
     void ApplyLayout()
     {
-        if (characters == null || characters.Length == 0)
+        if (characters.Length == 0)
         {
             return;
         }
@@ -265,12 +270,7 @@ public class CharacterSelection : MonoBehaviour
 
     void UpdateName()
     {
-        if (characterNameText == null)
-        {
-            return;
-        }
-
-        if (characters == null || characters.Length == 0)
+        if (characters.Length == 0)
         {
             characterNameText.text = string.Empty;
             return;
@@ -290,7 +290,7 @@ public class CharacterSelection : MonoBehaviour
 
     void OnGenderChanged(bool isMale)
     {
-        if (characters == null || characters.Length == 0 || inTransit)
+        if (characters.Length == 0 || inTransit)
         {
             return;
         }
@@ -354,12 +354,25 @@ public class CharacterSelection : MonoBehaviour
         }
 
         value %= length;
-        
+
         if (value < 0)
         {
             value += length;
         }
 
         return value;
+    }
+
+    void EnsureSetup()
+    {
+        if (charactersParent == null)
+        {
+            throw new InvalidOperationException("CharacterSelection setup failed: charactersParent reference is missing.");
+        }
+
+        if (characterNameText == null)
+        {
+            throw new InvalidOperationException("CharacterSelection setup failed: characterNameText reference is missing.");
+        }
     }
 }

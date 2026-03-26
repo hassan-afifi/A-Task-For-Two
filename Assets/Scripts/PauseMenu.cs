@@ -1,9 +1,10 @@
-﻿using System;
+using System;
 using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.InputSystem;
 using TMPro;
 
+// Manages pause menu state, pages, and actions.
 public class PauseMenu : MonoBehaviour
 {
     private enum TriggerName
@@ -20,21 +21,19 @@ public class PauseMenu : MonoBehaviour
     private InputActions input;
     private string lastJoinCode = string.Empty;
 
+    // Indicates whether the pause menu is currently open.
     public static bool isOpen = false;
-    public static event Action<bool> PauseStateChanged;
 
+    // Notifies listeners when pause state changes.
+    public static event Action<bool> PauseStateChanged;
     void Awake()
     {
+        EnsureSetup();
         input = new InputActions();
     }
 
     void OnEnable()
     {
-        if (input == null)
-        {
-            input = new InputActions();
-        }
-
         input.System.Pause.performed += OnPauseInput;
         input.System.Enable();
         input.UI.Disable();
@@ -48,13 +47,8 @@ public class PauseMenu : MonoBehaviour
             ResetCopy();
         }
 
-        isOpen = !isOpen;
-
-        if (panel != null)
-        {
-            panel.SetActive(isOpen);
-        }
-
+        isOpen=!isOpen;
+        panel.SetActive(isOpen);
         SetHud(!isOpen);
 
         if (isOpen)
@@ -77,6 +71,7 @@ public class PauseMenu : MonoBehaviour
         PauseStateChanged?.Invoke(isOpen);
     }
 
+    // Closes the pause menu and resumes gameplay.
     public void ContinueGame()
     {
         if (isOpen)
@@ -85,6 +80,7 @@ public class PauseMenu : MonoBehaviour
         }
     }
 
+    // Opens the options page inside the pause menu.
     public void OpenOptions()
     {
         if (!isOpen)
@@ -95,6 +91,7 @@ public class PauseMenu : MonoBehaviour
         SetPages(showOptions: true);
     }
 
+    // Closes the options page and shows the pause main page.
     public void CloseOptions()
     {
         if (!isOpen)
@@ -106,18 +103,21 @@ public class PauseMenu : MonoBehaviour
         ResetOptionsTab();
     }
 
+    // Leaves the game and returns to the main menu.
     public void ReturnToMainMenu()
     {
         ResetPause();
         MenuActions.ReturnToMainMenu();
     }
 
+    // Exits play mode or the built application.
     public void ExitGame()
     {
         ResetPause();
         MenuActions.ExitGame();
     }
 
+    // Forces the pause menu closed from external systems.
     public static void ForceClose()
     {
         PauseMenu pauseMenu = UnityEngine.Object.FindFirstObjectByType<PauseMenu>();
@@ -154,10 +154,10 @@ public class PauseMenu : MonoBehaviour
         if (input != null)
         {
             input.Dispose();
-            input = null;
         }
     }
 
+    // Copies the current join code to the clipboard.
     public void CopyJoinCode()
     {
         if (GameSession.Instance == null || string.IsNullOrEmpty(GameSession.Instance.JoinCode))
@@ -166,13 +166,9 @@ public class PauseMenu : MonoBehaviour
         }
 
         GUIUtility.systemCopyBuffer = GameSession.Instance.JoinCode;
-
-        if (codeCopiedAnimator != null)
-        {
-            string copiedTrigger = Trigger(TriggerName.Copied);
-            codeCopiedAnimator.ResetTrigger(copiedTrigger);
-            codeCopiedAnimator.SetTrigger(copiedTrigger);
-        }
+        string copiedTrigger = Trigger(TriggerName.Copied);
+        codeCopiedAnimator.ResetTrigger(copiedTrigger);
+        codeCopiedAnimator.SetTrigger(copiedTrigger);
     }
 
     void ResetPause()
@@ -182,11 +178,7 @@ public class PauseMenu : MonoBehaviour
         ResetCopy();
         HidePages();
         SetHud(true);
-
-        if (panel != null)
-        {
-            panel.SetActive(false);
-        }
+        SetActiveSafe(panel, false);
 
         if (input != null)
         {
@@ -201,12 +193,10 @@ public class PauseMenu : MonoBehaviour
 
     void SetHud(bool isVisible)
     {
-        if (hudCanvas == null)
+        if (hudCanvas != null)
         {
-            return;
+            hudCanvas.enabled = isVisible;
         }
-
-        hudCanvas.enabled = isVisible;
     }
 
     void ShowMain()
@@ -216,38 +206,19 @@ public class PauseMenu : MonoBehaviour
 
     void HidePages()
     {
-        if (pauseMainPanel != null)
-        {
-            pauseMainPanel.SetActive(false);
-        }
-
-        if (optionsMenuPanel != null)
-        {
-            optionsMenuPanel.SetActive(false);
-        }
+        SetActiveSafe(pauseMainPanel, false);
+        SetActiveSafe(optionsMenuPanel, false);
     }
 
     void SetPages(bool showOptions)
     {
-        if (pauseMainPanel != null)
-        {
-            pauseMainPanel.SetActive(!showOptions);
-        }
-
-        if (optionsMenuPanel != null)
-        {
-            optionsMenuPanel.SetActive(showOptions);
-        }
+        SetActiveSafe(pauseMainPanel, !showOptions);
+        SetActiveSafe(optionsMenuPanel, showOptions);
     }
 
     void ResetCopy()
     {
-        if (codeCopiedAnimator == null)
-        {
-            return;
-        }
-
-        if (!codeCopiedAnimator.gameObject.activeInHierarchy)
+        if (codeCopiedAnimator == null || codeCopiedAnimator.gameObject == null || !codeCopiedAnimator.gameObject.activeInHierarchy)
         {
             return;
         }
@@ -260,21 +231,15 @@ public class PauseMenu : MonoBehaviour
     {
         switch (trigger)
         {
-            case TriggerName.Copied:
-                return "Copied";
-            default:
-                throw new ArgumentOutOfRangeException(nameof(trigger), trigger, null);
+        case TriggerName.Copied: return "Copied";
+        default: throw new ArgumentOutOfRangeException(nameof(trigger), trigger, null);
         }
     }
 
     void RefreshJoinCode(bool force)
     {
-        if (joinCodeText == null)
-        {
-            return;
-        }
-
         string joinCode = string.Empty;
+
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsClient && GameSession.Instance != null)
         {
             joinCode = GameSession.Instance.JoinCode ?? string.Empty;
@@ -344,7 +309,12 @@ public class PauseMenu : MonoBehaviour
             return;
         }
 
-        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsClient)
+        if (NetworkManager.Singleton == null)
+        {
+            return;
+        }
+
+        if (!NetworkManager.Singleton.IsClient)
         {
             return;
         }
@@ -361,5 +331,46 @@ public class PauseMenu : MonoBehaviour
         }
 
         Toggle();
+    }
+
+    static void SetActiveSafe(GameObject target, bool isActive)
+    {
+        if (target != null)
+        {
+            target.SetActive(isActive);
+        }
+    }
+
+    void EnsureSetup()
+    {
+        if (panel == null)
+        {
+            throw new InvalidOperationException("PauseMenu setup failed: panel reference is missing.");
+        }
+
+        if (pauseMainPanel == null)
+        {
+            throw new InvalidOperationException("PauseMenu setup failed: pauseMainPanel reference is missing.");
+        }
+
+        if (optionsMenuPanel == null)
+        {
+            throw new InvalidOperationException("PauseMenu setup failed: optionsMenuPanel reference is missing.");
+        }
+
+        if (hudCanvas == null)
+        {
+            throw new InvalidOperationException("PauseMenu setup failed: hudCanvas reference is missing.");
+        }
+
+        if (joinCodeText == null)
+        {
+            throw new InvalidOperationException("PauseMenu setup failed: joinCodeText reference is missing.");
+        }
+
+        if (codeCopiedAnimator == null)
+        {
+            throw new InvalidOperationException("PauseMenu setup failed: codeCopiedAnimator reference is missing.");
+        }
     }
 }

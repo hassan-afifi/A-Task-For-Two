@@ -228,7 +228,7 @@ GameObject:
   - component: {fileID: 6244341801319265285}
   - component: {fileID: 3247823602503056798}
   - component: {fileID: 5490041082967568152}
-  - component: {fileID: 3570439848244110781}
+  - component: {fileID: 276583975858864973}
   m_Layer: 0
   m_Name: WallLamp
   m_TagString: Untagged
@@ -312,8 +312,8 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!65 &3570439848244110781
-BoxCollider:
+--- !u!64 &276583975858864973
+MeshCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -330,6 +330,7 @@ BoxCollider:
   m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 0.18024985, y: 0.15984657, z: 0.3604997}
-  m_Center: {x: -0.090125, y: 0.07992329, z: 0.000000074505806}
+  serializedVersion: 5
+  m_Convex: 0
+  m_CookingOptions: 30
+  m_Mesh: {fileID: 4300000, guid: e3888cc896544984d8101911bebea040, type: 3}

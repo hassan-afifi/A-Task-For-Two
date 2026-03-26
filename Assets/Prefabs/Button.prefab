@@ -37,7 +37,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 65, y: 300}
-  m_SizeDelta: {x: 500, y: 150}
+  m_SizeDelta: {x: 465, y: 85}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &7419536327721221817
 CanvasRenderer:
@@ -145,4 +145,3 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0472e0a7c05f00545accc06dfa7bb8a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UIButtonSfx
-  playHoverOnSelect: 1

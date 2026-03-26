@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Reflection;
 using NUnit.Framework;
+using TMPro;
 using UnityEngine;
 using UnityEngine.TestTools;
 
@@ -33,6 +34,7 @@ public class PauseMenuPlayTests
     public IEnumerator OpenCloseOptions_SwitchesPanels()
     {
         var root = new GameObject("PauseMenu_Test");
+        root.SetActive(false);
         var panel = new GameObject("Panel");
         var main = new GameObject("Main");
         var options = new GameObject("Options");
@@ -42,12 +44,19 @@ public class PauseMenuPlayTests
 
         var hudGo = new GameObject("Hud");
         var hud = hudGo.AddComponent<Canvas>();
+        var joinCodeGo = new GameObject("JoinCodeText");
+        var joinCode = joinCodeGo.AddComponent<TextMeshProUGUI>();
+        var copyAnimGo = new GameObject("CopyAnimator");
+        var copyAnimator = copyAnimGo.AddComponent<Animator>();
 
         var menu = root.AddComponent<PauseMenu>();
         SetField(menu, "panel", panel);
         SetField(menu, "pauseMainPanel", main);
         SetField(menu, "optionsMenuPanel", options);
         SetField(menu, "hudCanvas", hud);
+        SetField(menu, "joinCodeText", joinCode);
+        SetField(menu, "codeCopiedAnimator", copyAnimator);
+        Invoke(menu, "Awake");
 
         PauseMenu.isOpen = true;
         menu.OpenOptions();
@@ -60,6 +69,8 @@ public class PauseMenuPlayTests
 
         Object.Destroy(root);
         Object.Destroy(hudGo);
+        Object.Destroy(joinCodeGo);
+        Object.Destroy(copyAnimGo);
         yield return null;
     }
 
@@ -67,6 +78,7 @@ public class PauseMenuPlayTests
     public IEnumerator ContinueGame_WhenOpen_ClosesMenu()
     {
         var root = new GameObject("PauseMenu_Test");
+        root.SetActive(false);
         var panel = new GameObject("Panel");
         var main = new GameObject("Main");
         var options = new GameObject("Options");
@@ -75,12 +87,18 @@ public class PauseMenuPlayTests
         options.transform.SetParent(panel.transform, false);
         var hudGo = new GameObject("Hud");
         var hud = hudGo.AddComponent<Canvas>();
+        var joinCodeGo = new GameObject("JoinCodeText");
+        var joinCode = joinCodeGo.AddComponent<TextMeshProUGUI>();
+        var copyAnimGo = new GameObject("CopyAnimator");
+        var copyAnimator = copyAnimGo.AddComponent<Animator>();
 
         var menu = root.AddComponent<PauseMenu>();
         SetField(menu, "panel", panel);
         SetField(menu, "pauseMainPanel", main);
         SetField(menu, "optionsMenuPanel", options);
         SetField(menu, "hudCanvas", hud);
+        SetField(menu, "joinCodeText", joinCode);
+        SetField(menu, "codeCopiedAnimator", copyAnimator);
 
         Invoke(menu, "Awake");
         Invoke(menu, "Toggle");
@@ -93,6 +111,8 @@ public class PauseMenuPlayTests
 
         Object.Destroy(root);
         Object.Destroy(hudGo);
+        Object.Destroy(joinCodeGo);
+        Object.Destroy(copyAnimGo);
         yield return null;
     }
 

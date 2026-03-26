@@ -1,9 +1,11 @@
+using System;
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 using System.Linq;
 using UnityEngine.InputSystem;
 
+// Controls the main menu flow and relay actions.
 public class MainMenu : MonoBehaviour
 {
     [SerializeField] private TMP_InputField nameInput;
@@ -14,35 +16,20 @@ public class MainMenu : MonoBehaviour
     [SerializeField] private GameObject mainMenuPanel;
     [SerializeField] private GameObject optionsMenuPanel;
     private InputActions input;
-
     void Awake()
     {
+        EnsureSetup();
         input = new InputActions();
-
-        if (nameInput != null)
-        {
-            nameInput.onValueChanged.AddListener(OnInput);
-        }
-
-        if (codeInput != null)
-        {
-            codeInput.onValueChanged.AddListener(OnInput);
-        }
-
+        nameInput.onValueChanged.AddListener(OnInput);
+        codeInput.onValueChanged.AddListener(OnInput);
         UpdateButtons();
     }
 
     void OnEnable()
     {
-        if (input == null)
-        {
-            input = new InputActions();
-        }
-
         input.System.Pause.performed += OnPauseInput;
         input.System.Enable();
         input.UI.Disable();
-
         LoadInputs();
         UpdateButtons();
         CloseOptions();
@@ -50,14 +37,12 @@ public class MainMenu : MonoBehaviour
 
     void OnDisable()
     {
-        if (input == null)
+        if (input != null)
         {
-            return;
+            input.System.Pause.performed -= OnPauseInput;
+            input.System.Disable();
+            input.UI.Disable();
         }
-
-        input.System.Pause.performed -= OnPauseInput;
-        input.System.Disable();
-        input.UI.Disable();
     }
 
     void OnDestroy()
@@ -75,43 +60,31 @@ public class MainMenu : MonoBehaviour
         if (input != null)
         {
             input.Dispose();
-            input = null;
         }
     }
 
+    // Opens the options panel from the main menu.
     public void OpenOptions()
     {
-        if (optionsMenuPanel != null)
-        {
-            optionsMenuPanel.SetActive(true);
-        }
-
-        if (mainMenuPanel != null)
-        {
-            mainMenuPanel.SetActive(false);
-        }
+        optionsMenuPanel.SetActive(true);
+        mainMenuPanel.SetActive(false);
     }
 
+    // Closes the options panel and returns to the main menu panel.
     public void CloseOptions()
     {
-        if (optionsMenuPanel != null)
-        {
-            optionsMenuPanel.SetActive(false);
-        }
-
-        if (mainMenuPanel != null)
-        {
-            mainMenuPanel.SetActive(true);
-        }
-
+        optionsMenuPanel.SetActive(false);
+        mainMenuPanel.SetActive(true);
         ResetOptionsTab();
     }
 
+    // Exits play mode or the built application.
     public void ExitGame()
     {
         MenuActions.ExitGame();
     }
 
+    // Starts hosting a new relay game.
     public async void OnCreateGame()
     {
         if (!CanCreate())
@@ -119,16 +92,16 @@ public class MainMenu : MonoBehaviour
             return;
         }
 
-        if (GameSession.Instance == null || relay == null)
+        if (GameSession.Instance == null)
         {
-            throw new System.InvalidOperationException("OnCreateGame failed: GameSession or RelayManager is missing.");
+            throw new InvalidOperationException("OnCreateGame failed: GameSession is missing.");
         }
 
         GameSession.Instance.SetName(nameInput.text.Trim());
         await relay.CreateGame();
     }
 
-
+    // Joins an existing relay game using the entered code.
     public async void OnJoinGame()
     {
         if (!CanJoin())
@@ -136,9 +109,9 @@ public class MainMenu : MonoBehaviour
             return;
         }
 
-        if (GameSession.Instance == null || relay == null)
+        if (GameSession.Instance == null)
         {
-            throw new System.InvalidOperationException("OnJoinGame failed: GameSession or RelayManager is missing.");
+            throw new InvalidOperationException("OnJoinGame failed: GameSession is missing.");
         }
 
         string cleanedName = nameInput.text.Trim();
@@ -150,7 +123,7 @@ public class MainMenu : MonoBehaviour
 
     void OnInput(string _)
     {
-        if (GameSession.Instance != null && nameInput != null)
+        if (GameSession.Instance != null)
         {
             GameSession.Instance.SetName(nameInput.text);
         }
@@ -162,10 +135,10 @@ public class MainMenu : MonoBehaviour
     {
         if (GameSession.Instance == null)
         {
-            return;
+            throw new InvalidOperationException("MainMenu.LoadInputs failed: GameSession.Instance is missing.");
         }
 
-        if (nameInput != null && string.IsNullOrWhiteSpace(nameInput.text))
+        if (string.IsNullOrWhiteSpace(nameInput.text))
         {
             nameInput.SetTextWithoutNotify(GameSession.Instance.PlayerName ?? string.Empty);
         }
@@ -173,25 +146,18 @@ public class MainMenu : MonoBehaviour
 
     void UpdateButtons()
     {
-        if (createGameButton != null)
-        {
-            createGameButton.interactable = CanCreate();
-        }
-
-        if (joinGameButton != null)
-        {
-            joinGameButton.interactable = CanJoin();
-        }
+        createGameButton.interactable = CanCreate();
+        joinGameButton.interactable = CanJoin();
     }
 
     bool CanCreate()
     {
-        return HasLetter(nameInput != null ? nameInput.text : string.Empty);
+        return HasLetter(nameInput.text);
     }
 
     bool CanJoin()
     {
-        return CanCreate() && ValidCode(codeInput != null ? codeInput.text : string.Empty);
+        return CanCreate() && ValidCode(codeInput.text);
     }
 
     bool HasLetter(string value)
@@ -221,12 +187,12 @@ public class MainMenu : MonoBehaviour
             return;
         }
 
-        if (optionsMenuPanel != null && optionsMenuPanel.activeInHierarchy)
+        if (optionsMenuPanel.activeInHierarchy)
         {
             return;
         }
 
-        if (mainMenuPanel != null && !mainMenuPanel.activeInHierarchy)
+        if (!mainMenuPanel.activeInHierarchy)
         {
             return;
         }
@@ -246,11 +212,6 @@ public class MainMenu : MonoBehaviour
 
     OptionsMenu FindOptionsMenu()
     {
-        if (optionsMenuPanel == null)
-        {
-            return null;
-        }
-
         OptionsMenu menu = optionsMenuPanel.GetComponent<OptionsMenu>();
 
         if (menu != null)
@@ -280,5 +241,43 @@ public class MainMenu : MonoBehaviour
         }
 
         return null;
+    }
+
+    void EnsureSetup()
+    {
+        if (nameInput == null)
+        {
+            throw new InvalidOperationException("MainMenu setup failed: nameInput reference is missing.");
+        }
+
+        if (codeInput == null)
+        {
+            throw new InvalidOperationException("MainMenu setup failed: codeInput reference is missing.");
+        }
+
+        if (createGameButton == null)
+        {
+            throw new InvalidOperationException("MainMenu setup failed: createGameButton reference is missing.");
+        }
+
+        if (joinGameButton == null)
+        {
+            throw new InvalidOperationException("MainMenu setup failed: joinGameButton reference is missing.");
+        }
+
+        if (relay == null)
+        {
+            throw new InvalidOperationException("MainMenu setup failed: relay reference is missing.");
+        }
+
+        if (mainMenuPanel == null)
+        {
+            throw new InvalidOperationException("MainMenu setup failed: mainMenuPanel reference is missing.");
+        }
+
+        if (optionsMenuPanel == null)
+        {
+            throw new InvalidOperationException("MainMenu setup failed: optionsMenuPanel reference is missing.");
+        }
     }
 }

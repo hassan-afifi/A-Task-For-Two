@@ -1,25 +1,19 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
+// Loads the main menu scene from the bootstrap scene.
 public class BootstrapLoader : MonoBehaviour
 {
-    private const string DefaultInitialScene = "MainMenu";
-    [SerializeField] private string initialSceneName = DefaultInitialScene;
-
+    private const string InitialSceneName = "MainMenu";
     void Start()
     {
         Scene activeScene = SceneManager.GetActiveScene();
 
-        if (string.IsNullOrWhiteSpace(initialSceneName))
-        {
-            throw new System.InvalidOperationException("BootstrapLoader setup failed: initialSceneName is empty.");
-        }
-
-        if (activeScene.name == initialSceneName)
+        if (activeScene.name == InitialSceneName)
         {
             return;
         }
 
-        SceneManager.LoadScene(initialSceneName, LoadSceneMode.Single);
+        SceneManager.LoadScene(InitialSceneName, LoadSceneMode.Single);
     }
 }

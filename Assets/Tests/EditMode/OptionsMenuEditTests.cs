@@ -1,3 +1,4 @@
+using System;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
@@ -7,24 +8,12 @@ public class OptionsMenuEditTests
 {
     private const string CameraFovKey = "opt_camera_fov";
     private const string SensPctKey = "opt_camera_sensitivity_pct";
-    private const string VolumeInitKey = "opt_volume_defaults_initialized_v1";
-    private const string MasterVolumeKey = "opt_master_volume";
-    private const string GameSfxKey = "opt_game_sfx_volume";
-    private const string MenuSfxKey = "opt_menu_sfx_volume";
-    private const string GameMusicKey = "opt_game_music_volume";
-    private const string MenuMusicKey = "opt_menu_music_volume";
 
     [SetUp]
     public void SetUp()
     {
         PlayerPrefs.DeleteKey(CameraFovKey);
         PlayerPrefs.DeleteKey(SensPctKey);
-        PlayerPrefs.DeleteKey(VolumeInitKey);
-        PlayerPrefs.DeleteKey(MasterVolumeKey);
-        PlayerPrefs.DeleteKey(GameSfxKey);
-        PlayerPrefs.DeleteKey(MenuSfxKey);
-        PlayerPrefs.DeleteKey(GameMusicKey);
-        PlayerPrefs.DeleteKey(MenuMusicKey);
     }
 
     [TearDown]
@@ -32,12 +21,6 @@ public class OptionsMenuEditTests
     {
         PlayerPrefs.DeleteKey(CameraFovKey);
         PlayerPrefs.DeleteKey(SensPctKey);
-        PlayerPrefs.DeleteKey(VolumeInitKey);
-        PlayerPrefs.DeleteKey(MasterVolumeKey);
-        PlayerPrefs.DeleteKey(GameSfxKey);
-        PlayerPrefs.DeleteKey(MenuSfxKey);
-        PlayerPrefs.DeleteKey(GameMusicKey);
-        PlayerPrefs.DeleteKey(MenuMusicKey);
     }
 
     [Test]
@@ -73,21 +56,7 @@ public class OptionsMenuEditTests
         Invoke<object>(scope.Component, "ApplyCrosshairSize", 10f, false);
         Assert.That(rect.sizeDelta.x, Is.EqualTo(50f).Within(0.01f));
 
-        Object.DestroyImmediate(crosshair);
-    }
-
-    [Test]
-    public void EnsureVolumeDefaults_InitializesOnce()
-    {
-        using var scope = new ComponentScope<OptionsMenu>();
-
-        Invoke<object>(scope.Component, "EnsureVolumeDefaults");
-        Assert.That(PlayerPrefs.GetInt(VolumeInitKey, 0), Is.EqualTo(1));
-        Assert.That(PlayerPrefs.GetFloat(MasterVolumeKey, -1f), Is.EqualTo(50f).Within(0.0001f));
-
-        PlayerPrefs.SetFloat(MasterVolumeKey, 77f);
-        Invoke<object>(scope.Component, "EnsureVolumeDefaults");
-        Assert.That(PlayerPrefs.GetFloat(MasterVolumeKey, -1f), Is.EqualTo(77f).Within(0.0001f));
+        UnityEngine.Object.DestroyImmediate(crosshair);
     }
 
     [Test]
@@ -122,7 +91,7 @@ public class OptionsMenuEditTests
         return (T)result;
     }
 
-    private sealed class ComponentScope<T> : System.IDisposable where T : Component
+    private sealed class ComponentScope<T> : IDisposable where T : Component
     {
         public T Component { get; }
         private readonly GameObject gameObject;
@@ -137,7 +106,7 @@ public class OptionsMenuEditTests
         {
             if (gameObject != null)
             {
-                Object.DestroyImmediate(gameObject);
+                UnityEngine.Object.DestroyImmediate(gameObject);
             }
         }
     }

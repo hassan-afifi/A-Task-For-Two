@@ -235,6 +235,7 @@ GameObject:
   - component: {fileID: 6907276391851527638}
   - component: {fileID: 4076784657797859366}
   - component: {fileID: 5708777346837648404}
+  - component: {fileID: 3432020632348723531}
   m_Layer: 5
   m_Name: Dropdown
   m_TagString: Untagged
@@ -369,8 +370,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0472e0a7c05f00545accc06dfa7bb8a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UIButtonSfx
-  selectHover: 0
-  sliderTickGap: 0.05
+--- !u!114 &3432020632348723531
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3584133077840625361}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cc197f3b4d633d84c807f9abc008be60, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ATaskForTwo::DropdownHelper
+  arrowGraphic: {fileID: 4471715726382360005}
 --- !u!1 &4766472668966752641
 GameObject:
   m_ObjectHideFlags: 0
@@ -644,7 +656,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Scrollbar
   m_Navigation:
-    m_Mode: 3
+    m_Mode: 0
     m_WrapAround: 0
     m_SelectOnUp: {fileID: 0}
     m_SelectOnDown: {fileID: 0}
@@ -732,7 +744,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Toggle
   m_Navigation:
-    m_Mode: 3
+    m_Mode: 0
     m_WrapAround: 0
     m_SelectOnUp: {fileID: 0}
     m_SelectOnDown: {fileID: 0}
@@ -746,7 +758,7 @@ MonoBehaviour:
     m_SelectedColor: {r: 0.1, g: 0.1, b: 0.1, a: 1}
     m_DisabledColor: {r: 0, g: 0, b: 0, a: 1}
     m_ColorMultiplier: 1
-    m_FadeDuration: 0.1
+    m_FadeDuration: 0.2
   m_SpriteState:
     m_HighlightedSprite: {fileID: 0}
     m_PressedSprite: {fileID: 0}
@@ -1354,7 +1366,6 @@ GameObject:
   - component: {fileID: 5433810208301733872}
   - component: {fileID: 5287339355573406933}
   - component: {fileID: 5921114980833608662}
-  - component: {fileID: 3810132370763428386}
   m_Layer: 5
   m_Name: DropDown
   m_TagString: Untagged
@@ -1421,15 +1432,3 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &3810132370763428386
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9097198038788143465}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cc197f3b4d633d84c807f9abc008be60, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DropdownHelper

@@ -70,7 +70,7 @@ MonoBehaviour:
     m_SelectedColor: {r: 0.8, g: 0.8, b: 0.8, a: 1}
     m_DisabledColor: {r: 1, g: 1, b: 1, a: 0.19607843}
     m_ColorMultiplier: 1
-    m_FadeDuration: 0.1
+    m_FadeDuration: 0.2
   m_SpriteState:
     m_HighlightedSprite: {fileID: 0}
     m_PressedSprite: {fileID: 0}
@@ -144,8 +144,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0472e0a7c05f00545accc06dfa7bb8a0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UIButtonSfx
-  selectHover: 0
-  sliderTickGap: 0.01
 --- !u!1 &492395361356310751
 GameObject:
   m_ObjectHideFlags: 0
@@ -648,8 +646,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SliderSync
   slider: {fileID: 4974982677939933766}
   inputField: {fileID: 1789462910062874500}
-  useWholeNumbers: 1
-  decimals: 1
 --- !u!1 &3510252077365349762
 GameObject:
   m_ObjectHideFlags: 0
@@ -815,7 +811,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TMP_InputField
   m_Navigation:
-    m_Mode: 3
+    m_Mode: 0
     m_WrapAround: 0
     m_SelectOnUp: {fileID: 0}
     m_SelectOnDown: {fileID: 0}

@@ -1,22 +1,22 @@
-﻿using System;
+using System;
+using System.Globalization;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
 
+// Updates FPS, ping, and clock widgets on the HUD.
 public class HudStats : MonoBehaviour
 {
     private const string FpsFormat = "{0} FPS";
     private const string PingUnavailableText = "-- ms";
     private const string PingFormat = "{0} ms";
     private const string ClockFormat = "h:mm tt";
-
     [SerializeField] private TMP_Text fpsText;
     [SerializeField] private TMP_Text pingText;
     [SerializeField] private TMP_Text clockText;
     [SerializeField] private RectTransform fpsWidget;
     [SerializeField] private RectTransform pingWidget;
     [SerializeField] private RectTransform clockWidget;
-
     private float fpsTimer;
     private int frameCount;
     private float pingTimer;
@@ -27,9 +27,9 @@ public class HudStats : MonoBehaviour
     private bool lastClockOn;
     private const float StatWidth = 100f;
     private const float StatHeight = 50f;
-
     void Awake()
     {
+        EnsureSetup();
         Layout();
     }
 
@@ -52,12 +52,7 @@ public class HudStats : MonoBehaviour
         }
 
         float fps = frameCount / fpsTimer;
-
-        if (fpsText != null)
-        {
-            fpsText.text = string.Format(FpsFormat, Mathf.RoundToInt(fps));
-        }
-
+        fpsText.text = string.Format(FpsFormat, Mathf.RoundToInt(fps));
         frameCount = 0;
         fpsTimer = 0f;
     }
@@ -73,12 +68,13 @@ public class HudStats : MonoBehaviour
 
         pingTimer = 0f;
 
-        if (pingText == null)
+        if (NetworkManager.Singleton == null)
         {
+            pingText.text = PingUnavailableText;
             return;
         }
 
-        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsClient)
+        if (!NetworkManager.Singleton.IsClient)
         {
             pingText.text = PingUnavailableText;
             return;
@@ -103,11 +99,7 @@ public class HudStats : MonoBehaviour
         }
 
         clockTimer = 0f;
-
-        if (clockText != null)
-        {
-            clockText.text = DateTime.Now.ToString(ClockFormat, System.Globalization.CultureInfo.InvariantCulture);
-        }
+        clockText.text = DateTime.Now.ToString(ClockFormat, CultureInfo.InvariantCulture);
     }
 
     void Layout()
@@ -116,17 +108,17 @@ public class HudStats : MonoBehaviour
         PlaceWidget(fpsWidget, ref activeIndex);
         PlaceWidget(pingWidget, ref activeIndex);
         PlaceWidget(clockWidget, ref activeIndex);
-        lastFpsOn = fpsWidget != null && fpsWidget.gameObject.activeSelf;
-        lastPingOn = pingWidget != null && pingWidget.gameObject.activeSelf;
-        lastClockOn = clockWidget != null && clockWidget.gameObject.activeSelf;
+        lastFpsOn = fpsWidget.gameObject.activeSelf;
+        lastPingOn = pingWidget.gameObject.activeSelf;
+        lastClockOn = clockWidget.gameObject.activeSelf;
         layoutInit = true;
     }
 
     void LayoutIfNeeded()
     {
-        bool fpsOn = fpsWidget != null && fpsWidget.gameObject.activeSelf;
-        bool pingOn = pingWidget != null && pingWidget.gameObject.activeSelf;
-        bool clockOn = clockWidget != null && clockWidget.gameObject.activeSelf;
+        bool fpsOn = fpsWidget.gameObject.activeSelf;
+        bool pingOn = pingWidget.gameObject.activeSelf;
+        bool clockOn = clockWidget.gameObject.activeSelf;
 
         if (!layoutInit || fpsOn != lastFpsOn || pingOn != lastPingOn || clockOn != lastClockOn)
         {
@@ -136,11 +128,6 @@ public class HudStats : MonoBehaviour
 
     void PlaceWidget(RectTransform widget, ref int activeIndex)
     {
-        if (widget == null)
-        {
-            return;
-        }
-
         widget.anchorMin = new Vector2(0f, 1f);
         widget.anchorMax = new Vector2(0f, 1f);
         widget.pivot = new Vector2(0f, 1f);
@@ -182,5 +169,38 @@ public class HudStats : MonoBehaviour
 
         rttMs = NetworkManager.Singleton.NetworkConfig.NetworkTransport.GetCurrentRtt(NetworkManager.ServerClientId);
         return true;
+    }
+
+    void EnsureSetup()
+    {
+        if (fpsText == null)
+        {
+            throw new InvalidOperationException("HudStats setup failed: fpsText reference is missing.");
+        }
+
+        if (pingText == null)
+        {
+            throw new InvalidOperationException("HudStats setup failed: pingText reference is missing.");
+        }
+
+        if (clockText == null)
+        {
+            throw new InvalidOperationException("HudStats setup failed: clockText reference is missing.");
+        }
+
+        if (fpsWidget == null)
+        {
+            throw new InvalidOperationException("HudStats setup failed: fpsWidget reference is missing.");
+        }
+
+        if (pingWidget == null)
+        {
+            throw new InvalidOperationException("HudStats setup failed: pingWidget reference is missing.");
+        }
+
+        if (clockWidget == null)
+        {
+            throw new InvalidOperationException("HudStats setup failed: clockWidget reference is missing.");
+        }
     }
 }

@@ -1,12 +1,15 @@
-﻿using UnityEngine;
+using System;
+using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
+[Serializable]
 
-[System.Serializable]
+// Emits the selected gender state.
 public class GenderChangedEvent : UnityEvent<bool>
 {
 }
 
+// Handles animated gender selection UI.
 public class GenderToggle : MonoBehaviour
 {
     private enum BoolParam
@@ -29,11 +32,17 @@ public class GenderToggle : MonoBehaviour
     private float malePositionX = -40f;
     private float femalePositionX = 40f;
 
+    // Invoked when the selected gender changes.
     public GenderChangedEvent genderChanged;
     private bool isMale;
     private bool initialized;
     private bool blendInit;
     private float lastSelectorX;
+    void Awake()
+    {
+        EnsureSetup();
+        genderChanged ??= new GenderChangedEvent();
+    }
 
     void Start()
     {
@@ -53,12 +62,8 @@ public class GenderToggle : MonoBehaviour
 
     void Update()
     {
-        if (selectorRect == null)
-        {
-            return;
-        }
-
         float currentX = selectorRect.anchoredPosition.x;
+
         if (blendInit && Mathf.Abs(currentX - lastSelectorX) <= 0.0001f)
         {
             return;
@@ -69,16 +74,19 @@ public class GenderToggle : MonoBehaviour
         ApplyBlend();
     }
 
+    // Switches to the opposite gender option.
     public void ToggleGender()
     {
         SetGender(!isMale);
     }
 
+    // Sets the selected gender and triggers callbacks.
     public void SetGender(bool male)
     {
         SetGender(male, false, true);
     }
 
+    // Sets the selected gender with animation and callback control.
     public void SetGender(bool male, bool instant, bool invokeEvent)
     {
         bool changed = isMale != male;
@@ -86,7 +94,7 @@ public class GenderToggle : MonoBehaviour
         SyncAnim(instant);
         ApplyColors();
 
-        if ((changed || invokeEvent) && genderChanged != null)
+        if (changed || invokeEvent)
         {
             genderChanged.Invoke(isMale);
         }
@@ -94,11 +102,6 @@ public class GenderToggle : MonoBehaviour
 
     void SyncAnim(bool instant)
     {
-        if (selectorAnimator == null)
-        {
-            return;
-        }
-
         selectorAnimator.SetBool(BoolName(BoolParam.IsMale), isMale);
 
         if (instant)
@@ -109,43 +112,40 @@ public class GenderToggle : MonoBehaviour
 
     void ApplyColors()
     {
-        if (selectorRect != null)
-        {
-            blendInit = false;
-            ApplyBlend();
-            return;
-        }
-
-        if (maleIconGraphic != null)
-        {
-            maleIconGraphic.color = isMale ? activeIconColor : inactiveIconColor;
-        }
-
-        if (femaleIconGraphic != null)
-        {
-            femaleIconGraphic.color = isMale ? inactiveIconColor : activeIconColor;
-        }
+        blendInit = false;
+        ApplyBlend();
     }
 
     void ApplyBlend()
     {
-        if (selectorRect != null)
-        {
-            lastSelectorX = selectorRect.anchoredPosition.x;
-            blendInit = true;
-        }
-
+        lastSelectorX = selectorRect.anchoredPosition.x;
+        blendInit = true;
         float t = Mathf.InverseLerp(malePositionX, femalePositionX, selectorRect.anchoredPosition.x);
         t = Mathf.Clamp01(t);
+        maleIconGraphic.color = Color.Lerp(activeIconColor, inactiveIconColor, t);
+        femaleIconGraphic.color = Color.Lerp(inactiveIconColor, activeIconColor, t);
+    }
 
-        if (maleIconGraphic != null)
+    void EnsureSetup()
+    {
+        if (selectorAnimator == null)
         {
-            maleIconGraphic.color = Color.Lerp(activeIconColor, inactiveIconColor, t);
+            throw new InvalidOperationException("GenderToggle setup failed: selectorAnimator reference is missing.");
         }
 
-        if (femaleIconGraphic != null)
+        if (selectorRect == null)
         {
-            femaleIconGraphic.color = Color.Lerp(inactiveIconColor, activeIconColor, t);
+            throw new InvalidOperationException("GenderToggle setup failed: selectorRect reference is missing.");
+        }
+
+        if (maleIconGraphic == null)
+        {
+            throw new InvalidOperationException("GenderToggle setup failed: maleIconGraphic reference is missing.");
+        }
+
+        if (femaleIconGraphic == null)
+        {
+            throw new InvalidOperationException("GenderToggle setup failed: femaleIconGraphic reference is missing.");
         }
     }
 
@@ -153,10 +153,8 @@ public class GenderToggle : MonoBehaviour
     {
         switch (param)
         {
-            case BoolParam.IsMale:
-                return "IsMale";
-            default:
-                throw new System.ArgumentOutOfRangeException(nameof(param), param, null);
+        case BoolParam.IsMale: return "IsMale";
+        default: throw new ArgumentOutOfRangeException(nameof(param), param, null);
         }
     }
 
@@ -164,12 +162,9 @@ public class GenderToggle : MonoBehaviour
     {
         switch (state)
         {
-            case AnimState.MaleSelected:
-                return "MaleSelected";
-            case AnimState.FemaleSelected:
-                return "FemaleSelected";
-            default:
-                throw new System.ArgumentOutOfRangeException(nameof(state), state, null);
+        case AnimState.MaleSelected: return "MaleSelected";
+        case AnimState.FemaleSelected: return "FemaleSelected";
+        default: throw new ArgumentOutOfRangeException(nameof(state), state, null);
         }
     }
 }

@@ -1,5 +1,8 @@
+using System;
 using UnityEngine;
+[RequireComponent(typeof(Animator))]
 
+// Applies movement state to the character animator.
 public class CharacterAnimation : MonoBehaviour
 {
     private enum FloatParam
@@ -20,15 +23,14 @@ public class CharacterAnimation : MonoBehaviour
 
     private Animator animator;
     private PlayerMovement player;
-
     void Awake()
     {
         animator = GetComponent<Animator>();
         player = GetComponentInParent<PlayerMovement>();
 
-        if (animator == null || player == null)
+        if (player == null)
         {
-            enabled = false;
+            throw new InvalidOperationException("CharacterAnimation setup failed: missing PlayerMovement in parent.");
         }
     }
 
@@ -53,12 +55,9 @@ public class CharacterAnimation : MonoBehaviour
     {
         switch (param)
         {
-            case FloatParam.Vertical:
-                return "Vertical";
-            case FloatParam.Horizontal:
-                return "Horizontal";
-            default:
-                throw new System.ArgumentOutOfRangeException(nameof(param), param, null);
+        case FloatParam.Vertical: return "Vertical";
+        case FloatParam.Horizontal: return "Horizontal";
+        default: throw new ArgumentOutOfRangeException(nameof(param), param, null);
         }
     }
 
@@ -66,10 +65,8 @@ public class CharacterAnimation : MonoBehaviour
     {
         switch (param)
         {
-            case BoolParam.Crouching:
-                return "Crouching";
-            default:
-                throw new System.ArgumentOutOfRangeException(nameof(param), param, null);
+        case BoolParam.Crouching: return "Crouching";
+        default: throw new ArgumentOutOfRangeException(nameof(param), param, null);
         }
     }
 
@@ -77,10 +74,8 @@ public class CharacterAnimation : MonoBehaviour
     {
         switch (trigger)
         {
-            case TriggerParam.Jump:
-                return "Jump";
-            default:
-                throw new System.ArgumentOutOfRangeException(nameof(trigger), trigger, null);
+        case TriggerParam.Jump: return "Jump";
+        default: throw new ArgumentOutOfRangeException(nameof(trigger), trigger, null);
         }
     }
 }

@@ -1,23 +1,25 @@
+using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using TMPro;
+[RequireComponent(typeof(Selectable))]
 
+// Plays UI hover and click sounds for menu controls.
 public class MenuSfx : MonoBehaviour, IPointerEnterHandler, ISelectHandler, IBeginDragHandler, IEndDragHandler
 {
     private float sliderTickGap = 0.01f;
-
     private Selectable selectable;
     private Button button;
     private Toggle toggle;
     private Slider slider;
     private TMP_Dropdown tmpDropdown;
     private Dropdown dropdown;
+    private bool isSliderControl;
     private bool dragOn;
     private float lastVal;
     private int lastStep;
     private float lastTickAt;
-
     void Awake()
     {
         selectable = GetComponent<Selectable>();
@@ -42,6 +44,7 @@ public class MenuSfx : MonoBehaviour, IPointerEnterHandler, ISelectHandler, IBeg
             slider.onValueChanged.AddListener(OnSlide);
             lastVal = slider.value;
             lastStep = Mathf.RoundToInt(slider.value);
+            isSliderControl = true;
         }
 
         if (tmpDropdown != null)
@@ -85,6 +88,7 @@ public class MenuSfx : MonoBehaviour, IPointerEnterHandler, ISelectHandler, IBeg
         }
     }
 
+    // Plays hover audio when the pointer enters the control.
     public void OnPointerEnter(PointerEventData eventData)
     {
         if (slider != null)
@@ -100,6 +104,7 @@ public class MenuSfx : MonoBehaviour, IPointerEnterHandler, ISelectHandler, IBeg
         AudioManager.PlayHover();
     }
 
+    // Plays hover audio when the control is selected by navigation.
     public void OnSelect(BaseEventData eventData)
     {
         if (slider != null)
@@ -115,9 +120,10 @@ public class MenuSfx : MonoBehaviour, IPointerEnterHandler, ISelectHandler, IBeg
         AudioManager.PlayHover();
     }
 
+    // Starts slider drag sound tracking.
     public void OnBeginDrag(PointerEventData eventData)
     {
-        if (slider == null || !CanPlay())
+        if (!isSliderControl || !CanPlay())
         {
             return;
         }
@@ -128,9 +134,10 @@ public class MenuSfx : MonoBehaviour, IPointerEnterHandler, ISelectHandler, IBeg
         lastTickAt = -1f;
     }
 
+    // Stops slider drag sound tracking.
     public void OnEndDrag(PointerEventData eventData)
     {
-        if (slider == null)
+        if (!isSliderControl)
         {
             dragOn = false;
             return;
@@ -161,11 +168,6 @@ public class MenuSfx : MonoBehaviour, IPointerEnterHandler, ISelectHandler, IBeg
 
     void OnSlide(float value)
     {
-        if (slider == null)
-        {
-            return;
-        }
-
         if (!dragOn || !CanPlay())
         {
             lastVal = value;
@@ -215,14 +217,14 @@ public class MenuSfx : MonoBehaviour, IPointerEnterHandler, ISelectHandler, IBeg
     {
         if (template == null)
         {
-            return;
+            throw new InvalidOperationException("MenuSfx setup failed: dropdown template is missing.");
         }
 
         Toggle itemToggle = template.GetComponentInChildren<Toggle>(true);
 
         if (itemToggle == null)
         {
-            return;
+            throw new InvalidOperationException("MenuSfx setup failed: dropdown item Toggle is missing.");
         }
 
         DropHoverSfx hoverSfx = itemToggle.GetComponent<DropHoverSfx>();
@@ -235,17 +237,14 @@ public class MenuSfx : MonoBehaviour, IPointerEnterHandler, ISelectHandler, IBeg
 
     bool CanPlay()
     {
-        if (selectable == null)
-        {
-            return true;
-        }
-
         return selectable.IsInteractable();
     }
 }
 
+// Plays hover audio for dropdown list items.
 public class DropHoverSfx : MonoBehaviour, IPointerEnterHandler
 {
+    // Plays hover audio when the pointer enters a dropdown item.
     public void OnPointerEnter(PointerEventData eventData)
     {
         AudioManager.PlayHover();

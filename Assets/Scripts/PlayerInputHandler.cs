@@ -2,9 +2,10 @@ using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Netcode;
-
 [DefaultExecutionOrder(-1000)]
 [RequireComponent(typeof(NetworkObject))]
+
+// Captures and exposes local player input state.
 public class PlayerInputHandler : NetworkBehaviour
 {
     private InputActions input;
@@ -12,20 +13,28 @@ public class PlayerInputHandler : NetworkBehaviour
     private Vector2 moveInput;
     private Vector2 lookInput;
     private bool jumpPressed;
+    private bool interactPressed;
     private bool sprintHeld;
     private bool crouchPressed;
 
+    // Returns the current movement input vector.
     public Vector2 MoveInput => moveInput;
-    public Vector2 LookInput => lookInput;
-    public bool InputOn => inputOn;
-    public bool SprintHeld => sprintHeld;
 
+    // Returns the current look input vector.
+    public Vector2 LookInput => lookInput;
+
+    // Returns whether player input is currently enabled.
+    public bool InputOn => inputOn;
+
+    // Returns whether sprint input is currently held.
+    public bool SprintHeld => sprintHeld;
     void Awake()
     {
         input = new InputActions();
         EnsureInput();
     }
 
+    // Configures input ownership state on network spawn.
     public override void OnNetworkSpawn()
     {
         if (IsOwner)
@@ -44,6 +53,7 @@ public class PlayerInputHandler : NetworkBehaviour
         base.OnNetworkSpawn();
     }
 
+    // Clears input ownership state on network despawn.
     public override void OnNetworkDespawn()
     {
         PauseMenu.PauseStateChanged -= OnPause;
@@ -54,8 +64,8 @@ public class PlayerInputHandler : NetworkBehaviour
     void OnEnable()
     {
         EnsureInput();
-
         input.Player.Jump.performed += OnJump;
+        input.Player.Interact.performed += OnInteract;
         input.Player.Sprint.performed += OnSprint;
         input.Player.Sprint.canceled += OnSprintOff;
         input.Player.Crouch.performed += OnCrouch;
@@ -65,14 +75,15 @@ public class PlayerInputHandler : NetworkBehaviour
     void OnDisable()
     {
         EnsureInput();
-
         input.Player.Jump.performed -= OnJump;
+        input.Player.Interact.performed -= OnInteract;
         input.Player.Sprint.performed -= OnSprint;
         input.Player.Sprint.canceled -= OnSprintOff;
         input.Player.Crouch.performed -= OnCrouch;
         SetInput(false);
     }
 
+    // Disposes input resources when the object is destroyed.
     public override void OnDestroy()
     {
         PauseMenu.PauseStateChanged -= OnPause;
@@ -111,6 +122,7 @@ public class PlayerInputHandler : NetworkBehaviour
         lookInput = input.Player.Look.ReadValue<Vector2>();
     }
 
+    // Returns and clears the pending jump press.
     public bool ConsumeJump()
     {
         bool value = jumpPressed;
@@ -118,6 +130,15 @@ public class PlayerInputHandler : NetworkBehaviour
         return value;
     }
 
+    // Returns and clears the pending interact press.
+    public bool ConsumeInteract()
+    {
+        bool value = interactPressed;
+        interactPressed = false;
+        return value;
+    }
+
+    // Returns and clears the pending crouch press.
     public bool ConsumeCrouch()
     {
         bool value = crouchPressed;
@@ -169,6 +190,7 @@ public class PlayerInputHandler : NetworkBehaviour
         moveInput = Vector2.zero;
         lookInput = Vector2.zero;
         jumpPressed = false;
+        interactPressed = false;
         sprintHeld = false;
         crouchPressed = false;
     }
@@ -181,6 +203,16 @@ public class PlayerInputHandler : NetworkBehaviour
         }
 
         jumpPressed = true;
+    }
+
+    void OnInteract(InputAction.CallbackContext _)
+    {
+        if (!inputOn || PauseMenu.isOpen || ConnectionLost.IsShown)
+        {
+            return;
+        }
+
+        interactPressed = true;
     }
 
     void OnSprint(InputAction.CallbackContext _)

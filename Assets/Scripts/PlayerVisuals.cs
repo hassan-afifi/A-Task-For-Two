@@ -5,52 +5,45 @@ using Unity.Collections;
 using Unity.Netcode;
 using Unity.Netcode.Components;
 using UnityEngine;
-
 [RequireComponent(typeof(NetworkObject))]
 [RequireComponent(typeof(NetworkAnimator))]
 [RequireComponent(typeof(PlayerMovement))]
 [DefaultExecutionOrder(-10000)]
+
+// Synchronizes selected character visuals and name tags.
 public class PlayerVisuals : NetworkBehaviour
 {
     private const string DefaultPlayerName = "Player";
-
+    private const string TagAnchorName = "NameTagAnchor";
+    private const int PlayerLayer = 3;
     [SerializeField] private NetworkAnimator networkAnimator;
     [SerializeField] private Transform nameTagRoot;
     [SerializeField] private TMP_Text nameTagText;
-    [SerializeField] private string tagAnchorName = "NameTagAnchor";
-    [SerializeField] private int playerLayer = -1;
-
     private readonly List<GameObject> characterVisuals = new List<GameObject>();
     private readonly List<Animator> characterAnimators = new List<Animator>();
-    private readonly NetworkVariable<int> netChar = new NetworkVariable<int>(
-        0,
-        NetworkVariableReadPermission.Everyone,
-        NetworkVariableWritePermission.Server
-    );
-    private readonly NetworkVariable<FixedString64Bytes> netName = new NetworkVariable<FixedString64Bytes>(
-        new FixedString64Bytes(DefaultPlayerName),
-        NetworkVariableReadPermission.Everyone,
-        NetworkVariableWritePermission.Server
-    );
-
+    private readonly NetworkVariable<int> netChar = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    private readonly NetworkVariable<FixedString64Bytes> netName = new NetworkVariable<FixedString64Bytes>(new FixedString64Bytes(DefaultPlayerName), NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     private Transform currentTagAnchor;
     private PlayerMovement movement;
     private Animator activeAnimator;
 
+    // Returns the animator of the currently active character.
     public Animator ActiveAnimator => activeAnimator;
-
     void Awake()
     {
         movement = GetComponent<PlayerMovement>();
         networkAnimator ??= GetComponent<NetworkAnimator>();
         CacheChars();
-        if (networkAnimator != null && networkAnimator.Animator == null && characterAnimators.Count > 0)
+
+        if (networkAnimator.Animator == null && characterAnimators.Count > 0)
         {
             networkAnimator.Animator = characterAnimators[0];
         }
+
         ShowChar(0);
     }
 
+    // Applies synced character and name data on network spawn.
     public override void OnNetworkSpawn()
     {
         EnsureSetup();
@@ -86,17 +79,14 @@ public class PlayerVisuals : NetworkBehaviour
                 SetNameServerRpc(new FixedString64Bytes(localName));
             }
 
-            if (playerLayer >= 0)
+            if (PlayerLayer >= 0)
             {
-                SetLayers(gameObject, playerLayer);
+                SetLayers(gameObject, PlayerLayer);
             }
 
-            if (nameTagRoot != null)
-            {
-                nameTagRoot.gameObject.SetActive(false);
-            }
+            nameTagRoot.gameObject.SetActive(false);
         }
-        else if (nameTagRoot != null)
+        else
         {
             nameTagRoot.gameObject.SetActive(true);
         }
@@ -104,6 +94,7 @@ public class PlayerVisuals : NetworkBehaviour
         base.OnNetworkSpawn();
     }
 
+    // Unsubscribes from network variables on network despawn.
     public override void OnNetworkDespawn()
     {
         netChar.OnValueChanged -= OnChar;
@@ -113,7 +104,7 @@ public class PlayerVisuals : NetworkBehaviour
 
     void LateUpdate()
     {
-        if (IsOwner || !IsSpawned || nameTagRoot == null)
+        if (IsOwner || !IsSpawned)
         {
             return;
         }
@@ -124,11 +115,6 @@ public class PlayerVisuals : NetworkBehaviour
 
     void UpdateTagPos()
     {
-        if (currentTagAnchor == null)
-        {
-            return;
-        }
-
         Vector3 tagPosition = nameTagRoot.position;
         tagPosition.y = currentTagAnchor.position.y;
         nameTagRoot.position = tagPosition;
@@ -159,6 +145,7 @@ public class PlayerVisuals : NetworkBehaviour
             }
 
             Animator childAnimator = child.GetComponentInChildren<Animator>(true);
+
             if (childAnimator == null)
             {
                 continue;
@@ -200,18 +187,10 @@ public class PlayerVisuals : NetworkBehaviour
 
         if (currentTagAnchor == null)
         {
-            throw new InvalidOperationException($"PlayerVisuals setup failed: '{tagAnchorName}' is missing on active character '{currentCharacterRoot.name}'.");
+            throw new InvalidOperationException($"PlayerVisuals setup failed: '{TagAnchorName}' is missing on active character '{currentCharacterRoot.name}'.");
         }
 
-        if (networkAnimator == null)
-        {
-            throw new InvalidOperationException("PlayerVisuals setup failed: NetworkAnimator reference is missing.");
-        }
-
-        if (selectedAnimator != null)
-        {
-            networkAnimator.Animator = selectedAnimator;
-        }
+        networkAnimator.Animator = selectedAnimator;
     }
 
     int SavedChar()
@@ -226,16 +205,11 @@ public class PlayerVisuals : NetworkBehaviour
 
     Transform FindTagAnchor(Transform root)
     {
-        if (root == null)
-        {
-            return null;
-        }
-
         Transform[] allTransforms = root.GetComponentsInChildren<Transform>(true);
 
         for (int i = 0; i < allTransforms.Length; i++)
         {
-            if (allTransforms[i].name == tagAnchorName)
+            if (allTransforms[i].name == TagAnchorName)
             {
                 return allTransforms[i];
             }
@@ -319,16 +293,6 @@ public class PlayerVisuals : NetworkBehaviour
 
     void EnsureSetup()
     {
-        if (movement == null)
-        {
-            throw new InvalidOperationException("PlayerVisuals setup failed: PlayerMovement component is missing.");
-        }
-
-        if (networkAnimator == null)
-        {
-            throw new InvalidOperationException("PlayerVisuals setup failed: NetworkAnimator reference is missing.");
-        }
-
         if (nameTagRoot == null)
         {
             throw new InvalidOperationException("PlayerVisuals setup failed: nameTagRoot reference is missing.");
@@ -337,11 +301,6 @@ public class PlayerVisuals : NetworkBehaviour
         if (nameTagText == null)
         {
             throw new InvalidOperationException("PlayerVisuals setup failed: nameTagText reference is missing.");
-        }
-
-        if (string.IsNullOrWhiteSpace(tagAnchorName))
-        {
-            throw new InvalidOperationException("PlayerVisuals setup failed: tagAnchorName is empty.");
         }
     }
 

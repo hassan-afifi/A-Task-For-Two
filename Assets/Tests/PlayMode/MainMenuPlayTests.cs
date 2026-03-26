@@ -12,14 +12,30 @@ public class MainMenuPlayTests
     public IEnumerator OpenCloseOptions_SwitchesPanels()
     {
         var root = new GameObject("MainMenu_Test");
+        root.SetActive(false);
         var mainPanel = new GameObject("MainPanel");
         var optionsPanel = new GameObject("OptionsPanel");
+        var nameInput = new GameObject("NameInput").AddComponent<TMP_InputField>();
+        var codeInput = new GameObject("CodeInput").AddComponent<TMP_InputField>();
+        var createButton = new GameObject("CreateButton").AddComponent<Button>();
+        var joinButton = new GameObject("JoinButton").AddComponent<Button>();
+        var relay = new GameObject("Relay").AddComponent<RelayManager>();
+
         mainPanel.transform.SetParent(root.transform, false);
         optionsPanel.transform.SetParent(root.transform, false);
+        nameInput.transform.SetParent(root.transform, false);
+        codeInput.transform.SetParent(root.transform, false);
+        createButton.transform.SetParent(root.transform, false);
+        joinButton.transform.SetParent(root.transform, false);
 
         var menu = root.AddComponent<MainMenu>();
         SetField(menu, "mainMenuPanel", mainPanel);
         SetField(menu, "optionsMenuPanel", optionsPanel);
+        SetField(menu, "nameInput", nameInput);
+        SetField(menu, "codeInput", codeInput);
+        SetField(menu, "createGameButton", createButton);
+        SetField(menu, "joinGameButton", joinButton);
+        SetField(menu, "relay", relay);
 
         menu.OpenOptions();
         Assert.That(mainPanel.activeSelf, Is.False);
@@ -29,6 +45,7 @@ public class MainMenuPlayTests
         Assert.That(mainPanel.activeSelf, Is.True);
         Assert.That(optionsPanel.activeSelf, Is.False);
 
+        Object.Destroy(relay.gameObject);
         Object.Destroy(root);
         yield return null;
     }
@@ -42,12 +59,14 @@ public class MainMenuPlayTests
         SetGameSessionInstance(session);
 
         var root = new GameObject("MainMenu_Test");
+        root.SetActive(false);
         var mainPanel = new GameObject("MainPanel");
         var optionsPanel = new GameObject("OptionsPanel");
         var nameInput = new GameObject("NameInput").AddComponent<TMP_InputField>();
         var codeInput = new GameObject("CodeInput").AddComponent<TMP_InputField>();
         var createButton = new GameObject("CreateButton").AddComponent<Button>();
         var joinButton = new GameObject("JoinButton").AddComponent<Button>();
+        var relay = new GameObject("Relay").AddComponent<RelayManager>();
 
         mainPanel.transform.SetParent(root.transform, false);
         optionsPanel.transform.SetParent(root.transform, false);
@@ -63,14 +82,17 @@ public class MainMenuPlayTests
         SetField(menu, "codeInput", codeInput);
         SetField(menu, "createGameButton", createButton);
         SetField(menu, "joinGameButton", joinButton);
+        SetField(menu, "relay", relay);
 
-        Invoke(menu, "OnEnable");
+        root.SetActive(true);
+        yield return null;
 
         Assert.That(nameInput.text, Is.EqualTo("SavedPlayer"));
         Assert.That(createButton.interactable, Is.True);
         Assert.That(joinButton.interactable, Is.False);
 
         SetGameSessionInstance(null);
+        Object.Destroy(relay.gameObject);
         Object.Destroy(sessionRoot);
         Object.Destroy(root);
         yield return null;
@@ -84,21 +106,33 @@ public class MainMenuPlayTests
         SetGameSessionInstance(session);
 
         var root = new GameObject("MainMenu_Input");
+        root.SetActive(false);
+        var mainPanel = new GameObject("MainPanel");
+        var optionsPanel = new GameObject("OptionsPanel");
         var nameInput = new GameObject("NameInput").AddComponent<TMP_InputField>();
         var codeInput = new GameObject("CodeInput").AddComponent<TMP_InputField>();
         var createButton = new GameObject("CreateButton").AddComponent<Button>();
         var joinButton = new GameObject("JoinButton").AddComponent<Button>();
+        var relay = new GameObject("Relay").AddComponent<RelayManager>();
 
+        mainPanel.transform.SetParent(root.transform, false);
+        optionsPanel.transform.SetParent(root.transform, false);
         nameInput.transform.SetParent(root.transform, false);
         codeInput.transform.SetParent(root.transform, false);
         createButton.transform.SetParent(root.transform, false);
         joinButton.transform.SetParent(root.transform, false);
 
         var menu = root.AddComponent<MainMenu>();
+        SetField(menu, "mainMenuPanel", mainPanel);
+        SetField(menu, "optionsMenuPanel", optionsPanel);
         SetField(menu, "nameInput", nameInput);
         SetField(menu, "codeInput", codeInput);
         SetField(menu, "createGameButton", createButton);
         SetField(menu, "joinGameButton", joinButton);
+        SetField(menu, "relay", relay);
+
+        root.SetActive(true);
+        yield return null;
 
         nameInput.SetTextWithoutNotify("Alice");
         codeInput.SetTextWithoutNotify("ABC123");
@@ -111,6 +145,7 @@ public class MainMenuPlayTests
         Assert.That(joinButton.interactable, Is.False);
 
         SetGameSessionInstance(null);
+        Object.Destroy(relay.gameObject);
         Object.Destroy(sessionRoot);
         Object.Destroy(root);
         yield return null;

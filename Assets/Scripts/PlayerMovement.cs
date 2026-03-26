@@ -2,36 +2,39 @@ using System;
 using System.Collections;
 using UnityEngine;
 using Unity.Netcode;
-
 [RequireComponent(typeof(CharacterController))]
 [RequireComponent(typeof(NetworkObject))]
 [RequireComponent(typeof(PlayerInputHandler))]
+
+// Handles local player movement, camera look, and crouch/jump logic.
 public class PlayerMovement : NetworkBehaviour
 {
+    // Stores the active local player camera.
     public static Camera LocalCamera { get; private set; }
-
     [SerializeField] private Camera playerCamera;
-
     private float walkSpeed = 4f;
+
+    // Multiplies base speed while sprinting.
     public float sprintMultiplier = 2f;
     private float gravity = -9.81f;
     private float gravityMultiplier = 2f;
     private float jumpPower = 8f;
 
+    // Controls horizontal and vertical look sensitivity.
     public float mouseSensitivity = 0.1f;
     private float minLook = -80f;
     private float maxLook = 80f;
-
     private float standingHeight = 2.8f;
     private float crouchHeight = 1.8f;
     private float standingRadius = 0.8f;
     private float crouchRadius = 1.2f;
+
+    // Multiplies base speed while crouching.
     public float crouchSpeedMultiplier = 0.5f;
     private float crouchLerpSpeed = 10f;
     private float jumpCooldown = 1.5f;
     private float lastJumpTime = -999f;
     private float maxJumpY = 0.2f;
-
     private CharacterController controller;
     private PlayerInputHandler inputHandler;
     private Vector2 moveInput;
@@ -40,53 +43,46 @@ public class PlayerMovement : NetworkBehaviour
     private float verticalVelocity;
     private float cameraPitch;
 
+    // Indicates whether the player is currently crouching.
     public bool IsCrouching;
+
+    // Becomes true on the frame a jump is triggered.
     public bool JumpTriggered;
 
+    // Returns this player's camera reference.
     public Camera PlayerCamera => playerCamera;
 
+    // Returns normalized local movement values for animation logic.
     public Vector3 FinalMove
     {
         get
         {
-            if (controller == null)
-            {
-                return Vector3.zero;
-            }
-
             Vector3 localVelocity = transform.InverseTransformDirection(controller.velocity);
             float baseSpeed = Mathf.Max(0.01f, walkSpeed);
-            return new Vector3(
-                Mathf.Clamp(localVelocity.x / baseSpeed, -2f, 2f),
-                0f,
-                Mathf.Clamp(localVelocity.z / baseSpeed, -2f, 2f)
-            );
+            return new Vector3(Mathf.Clamp(localVelocity.x / baseSpeed, -2f, 2f), 0f, Mathf.Clamp(localVelocity.z / baseSpeed, -2f, 2f));
         }
     }
 
-    public bool IsRunning => inputHandler != null && inputHandler.SprintHeld && !IsCrouching && moveInput.sqrMagnitude > 0.0001f;
-    public bool IsGrounded => controller != null && controller.isGrounded;
+    // Returns whether sprint movement conditions are currently met.
+    public bool IsRunning => inputHandler.SprintHeld && !IsCrouching && moveInput.sqrMagnitude > 0.0001f;
 
+    // Returns whether the character controller is grounded.
+    public bool IsGrounded => controller.isGrounded;
     void Awake()
     {
+        controller = GetComponent<CharacterController>();
         inputHandler = GetComponent<PlayerInputHandler>();
         playerCamera = GetComponentInChildren<Camera>(true);
+
+        if (playerCamera == null)
+        {
+            throw new InvalidOperationException("PlayerMovement setup failed: player camera is missing.");
+        }
     }
 
+    // Initializes ownership-dependent state on network spawn.
     public override void OnNetworkSpawn()
     {
-        controller = GetComponent<CharacterController>();
-
-        if (controller == null)
-        {
-            throw new InvalidOperationException("PlayerMovement setup failed: CharacterController is missing.");
-        }
-
-        if (inputHandler == null)
-        {
-            throw new InvalidOperationException("PlayerMovement setup failed: PlayerInputHandler is missing.");
-        }
-
         if (!controller.enabled)
         {
             controller.enabled = true;
@@ -96,19 +92,11 @@ public class PlayerMovement : NetworkBehaviour
 
         if (IsOwner)
         {
-            if (playerCamera == null)
-            {
-                throw new InvalidOperationException("PlayerMovement setup failed: owner player has no assigned camera.");
-            }
-
-            if (playerCamera != null)
-            {
-                playerCamera.enabled = true;
-                playerCamera.fieldOfView = OptionsMenu.SavedFov(playerCamera.fieldOfView);
-                float sensPercent = OptionsMenu.SavedSensPct(mouseSensitivity * 100f);
-                mouseSensitivity = OptionsMenu.SensMap(sensPercent);
-                LocalCamera = playerCamera;
-            }
+            playerCamera.enabled = true;
+            playerCamera.fieldOfView = OptionsMenu.SavedFov(playerCamera.fieldOfView);
+            float sensPercent = OptionsMenu.SavedSensPct(mouseSensitivity * 100f);
+            mouseSensitivity = OptionsMenu.SensMap(sensPercent);
+            LocalCamera = playerCamera;
 
             if (listener != null)
             {
@@ -117,10 +105,7 @@ public class PlayerMovement : NetworkBehaviour
         }
         else
         {
-            if (playerCamera != null)
-            {
-                playerCamera.enabled = false;
-            }
+            playerCamera.enabled = false;
 
             if (listener != null)
             {
@@ -137,6 +122,7 @@ public class PlayerMovement : NetworkBehaviour
         base.OnNetworkSpawn();
     }
 
+    // Clears shared camera state on network despawn.
     public override void OnNetworkDespawn()
     {
         if (IsOwner && LocalCamera == playerCamera)
@@ -154,7 +140,7 @@ public class PlayerMovement : NetworkBehaviour
             return;
         }
 
-        if (controller == null || !controller.enabled)
+        if (!controller.enabled)
         {
             return;
         }
@@ -164,17 +150,8 @@ public class PlayerMovement : NetworkBehaviour
             return;
         }
 
-        if (inputHandler != null)
-        {
-            moveInput = inputHandler.MoveInput;
-            lookInput = inputHandler.LookInput;
-        }
-        else
-        {
-            moveInput = Vector2.zero;
-            lookInput = Vector2.zero;
-        }
-
+        moveInput = inputHandler.MoveInput;
+        lookInput = inputHandler.LookInput;
         HandleLook();
         HandleMovement();
         HandleJump();
@@ -183,7 +160,7 @@ public class PlayerMovement : NetworkBehaviour
 
     void HandleLook()
     {
-        if (inputHandler == null || !inputHandler.InputOn || PauseMenu.isOpen)
+        if (!inputHandler.InputOn || PauseMenu.isOpen)
         {
             return;
         }
@@ -193,11 +170,7 @@ public class PlayerMovement : NetworkBehaviour
         transform.Rotate(Vector3.up * mouseX);
         cameraPitch -= mouseY;
         cameraPitch = Mathf.Clamp(cameraPitch, minLook, maxLook);
-
-        if (playerCamera != null)
-        {
-            playerCamera.transform.localRotation = Quaternion.Euler(cameraPitch, 0f, 0f);
-        }
+        playerCamera.transform.localRotation = Quaternion.Euler(cameraPitch, 0f, 0f);
     }
 
     void HandleMovement()
@@ -206,7 +179,7 @@ public class PlayerMovement : NetworkBehaviour
         Vector3 move = transform.right * input.x + transform.forward * input.y;
         float speed = walkSpeed;
 
-        if (inputHandler != null && inputHandler.SprintHeld && !IsCrouching)
+        if (inputHandler.SprintHeld && !IsCrouching)
         {
             speed *= sprintMultiplier;
         }
@@ -233,13 +206,12 @@ public class PlayerMovement : NetworkBehaviour
     void HandleJump()
     {
         JumpTriggered = false;
-        bool jumpPressed = inputHandler != null && inputHandler.ConsumeJump();
-
+        bool jumpPressed = inputHandler.ConsumeJump();
         if (jumpPressed &&
-            controller.isGrounded &&
-            !IsCrouching &&
-            Time.time >= lastJumpTime + jumpCooldown &&
-            transform.position.y < maxJumpY)
+        controller.isGrounded &&
+        !IsCrouching &&
+        Time.time >= lastJumpTime + jumpCooldown &&
+        transform.position.y < maxJumpY)
         {
             JumpTriggered = true;
             verticalVelocity = jumpPower;
@@ -253,9 +225,9 @@ public class PlayerMovement : NetworkBehaviour
 
     void HandleCrouch()
     {
-        bool crouchPressed = inputHandler != null && inputHandler.ConsumeCrouch();
+        bool crouchPressed = inputHandler.ConsumeCrouch();
 
-        if (crouchPressed && controller != null && controller.isGrounded && Time.time >= lastJumpTime + jumpCooldown)
+        if (crouchPressed && controller.isGrounded && Time.time >= lastJumpTime + jumpCooldown)
         {
             IsCrouching = !IsCrouching;
         }
@@ -265,11 +237,7 @@ public class PlayerMovement : NetworkBehaviour
         controller.height = Mathf.Lerp(controller.height, targetHeight, Time.deltaTime * crouchLerpSpeed);
         controller.radius = Mathf.Lerp(controller.radius, targetRadius, Time.deltaTime * crouchLerpSpeed);
         controller.center = new Vector3(0f, controller.height / 2f, 0f);
-
-        if (playerCamera != null)
-        {
-            playerCamera.transform.localPosition = new Vector3(0f, controller.height - 0.3f, 0f);
-        }
+        playerCamera.transform.localPosition = new Vector3(0f, controller.height - 0.3f, 0f);
     }
 
     IEnumerator SetSpawn(Vector3 spawnPos)
