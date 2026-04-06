@@ -16,6 +16,8 @@ public class MainMenu : MonoBehaviour
     [SerializeField] private GameObject mainMenuPanel;
     [SerializeField] private GameObject optionsMenuPanel;
     private InputActions input;
+
+    // Validates setup and binds menu input callbacks.
     void Awake()
     {
         EnsureSetup();
@@ -25,6 +27,7 @@ public class MainMenu : MonoBehaviour
         UpdateButtons();
     }
 
+    // Enables menu input and refreshes visible UI state.
     void OnEnable()
     {
         input.System.Pause.performed += OnPauseInput;
@@ -35,6 +38,7 @@ public class MainMenu : MonoBehaviour
         CloseOptions();
     }
 
+    // Unsubscribes gameplay input when the menu is disabled.
     void OnDisable()
     {
         if (input != null)
@@ -45,6 +49,7 @@ public class MainMenu : MonoBehaviour
         }
     }
 
+    // Removes listeners and disposes input resources.
     void OnDestroy()
     {
         if (nameInput != null)
@@ -121,6 +126,7 @@ public class MainMenu : MonoBehaviour
         await relay.JoinGame(cleanedCode);
     }
 
+    // Saves typed name changes and refreshes button states.
     void OnInput(string _)
     {
         if (GameSession.Instance != null)
@@ -131,6 +137,7 @@ public class MainMenu : MonoBehaviour
         UpdateButtons();
     }
 
+    // Loads persisted input values into empty fields.
     void LoadInputs()
     {
         if (GameSession.Instance == null)
@@ -138,28 +145,33 @@ public class MainMenu : MonoBehaviour
             throw new InvalidOperationException("MainMenu.LoadInputs failed: GameSession.Instance is missing.");
         }
 
+        // Only backfill from saved session when user has not typed anything yet.
         if (string.IsNullOrWhiteSpace(nameInput.text))
         {
             nameInput.SetTextWithoutNotify(GameSession.Instance.PlayerName ?? string.Empty);
         }
     }
 
+    // Recomputes create and join button interactability.
     void UpdateButtons()
     {
         createGameButton.interactable = CanCreate();
         joinGameButton.interactable = CanJoin();
     }
 
+    // Returns true when the name field is valid.
     bool CanCreate()
     {
         return HasLetter(nameInput.text);
     }
 
+    // Returns true when name and join code are both valid.
     bool CanJoin()
     {
         return CanCreate() && ValidCode(codeInput.text);
     }
 
+    // Checks whether input contains at least one letter.
     bool HasLetter(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -170,6 +182,7 @@ public class MainMenu : MonoBehaviour
         return value.Any(char.IsLetter);
     }
 
+    // Validates that join code length is exactly six.
     bool ValidCode(string code)
     {
         if (string.IsNullOrWhiteSpace(code))
@@ -180,6 +193,7 @@ public class MainMenu : MonoBehaviour
         return code.Trim().Length == 6;
     }
 
+    // Opens options with the pause shortcut when allowed.
     void OnPauseInput(InputAction.CallbackContext context)
     {
         if (!context.performed)
@@ -200,6 +214,7 @@ public class MainMenu : MonoBehaviour
         OpenOptions();
     }
 
+    // Resets options UI tab when options are closed.
     void ResetOptionsTab()
     {
         OptionsMenu menu = FindOptionsMenu();
@@ -210,8 +225,10 @@ public class MainMenu : MonoBehaviour
         }
     }
 
+    // Locates the options menu from related hierarchy objects.
     OptionsMenu FindOptionsMenu()
     {
+        // Try direct component first for simple scene setups.
         OptionsMenu menu = optionsMenuPanel.GetComponent<OptionsMenu>();
 
         if (menu != null)
@@ -219,6 +236,7 @@ public class MainMenu : MonoBehaviour
             return menu;
         }
 
+        // Then try nested options menu under the panel.
         menu = optionsMenuPanel.GetComponentInChildren<OptionsMenu>(true);
 
         if (menu != null)
@@ -228,6 +246,7 @@ public class MainMenu : MonoBehaviour
 
         Transform parent = optionsMenuPanel.transform.parent;
 
+        // Finally walk up parents for wrapper-heavy menu hierarchies.
         while (parent != null)
         {
             menu = parent.GetComponent<OptionsMenu>();
@@ -243,6 +262,7 @@ public class MainMenu : MonoBehaviour
         return null;
     }
 
+    // Throws when required main menu references are missing.
     void EnsureSetup()
     {
         if (nameInput == null)

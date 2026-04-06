@@ -66,31 +66,37 @@ public class OptionsMenu : MonoBehaviour
         { PrefKey.ShowClock, "opt_show_system_clock" }
     };
 
+    // Returns the PlayerPrefs key name for an options entry.
     private static string Pref(PrefKey key)
     {
         return PrefNames[key];
     }
 
+    // Reads an integer option from PlayerPrefs.
     private static int PrefGetInt(PrefKey key, int defaultValue = 0)
     {
         return PlayerPrefs.GetInt(Pref(key), defaultValue);
     }
 
+    // Writes an integer option to PlayerPrefs.
     private static void PrefSetInt(PrefKey key, int value)
     {
         PlayerPrefs.SetInt(Pref(key), value);
     }
 
+    // Reads a float option from PlayerPrefs.
     private static float PrefGetFloat(PrefKey key, float defaultValue = 0f)
     {
         return PlayerPrefs.GetFloat(Pref(key), defaultValue);
     }
 
+    // Writes a float option to PlayerPrefs.
     private static void PrefSetFloat(PrefKey key, float value)
     {
         PlayerPrefs.SetFloat(Pref(key), value);
     }
 
+    // Returns whether a PlayerPrefs option key already exists.
     private static bool PrefHasKey(PrefKey key)
     {
         return PlayerPrefs.HasKey(Pref(key));
@@ -179,6 +185,7 @@ public class OptionsMenu : MonoBehaviour
         new Color32(255, 128, 0, 255)
     };
 
+    // Initializes references and loads saved settings at runtime.
     void Awake()
     {
         if (!Application.isPlaying)
@@ -195,6 +202,7 @@ public class OptionsMenu : MonoBehaviour
         LoadPrefs();
     }
 
+    // Enables pause input and tab button handlers.
     void OnEnable()
     {
         if (!Application.isPlaying)
@@ -208,6 +216,7 @@ public class OptionsMenu : MonoBehaviour
         ShowTab(DefaultTabIndex);
     }
 
+    // Disables pause input and unregisters tab button handlers.
     void OnDisable()
     {
         if (!Application.isPlaying)
@@ -225,6 +234,7 @@ public class OptionsMenu : MonoBehaviour
         UnregisterTabs();
     }
 
+    // Disposes runtime input resources on destroy.
     void OnDestroy()
     {
         if (!Application.isPlaying)
@@ -317,6 +327,8 @@ public class OptionsMenu : MonoBehaviour
 
     // Applies the system clock widget visibility toggle.
     public void OnShowClockChanged(bool value) => ApplyHudWidget(systemClockWidget, value, PrefKey.ShowClock, true);
+
+    // Collects supported resolutions and builds the active list.
     void PopulateResolutionDropdown()
     {
         allResList.Clear();
@@ -362,9 +374,11 @@ public class OptionsMenu : MonoBehaviour
 
             return b.y.CompareTo(a.y);
         });
+        
         RebuildResolutionList(GetModeOption());
     }
 
+    // Rebuilds the selectable resolution list for the selected display mode.
     void RebuildResolutionList(ModeOption displayModeOption)
     {
         resList.Clear();
@@ -397,6 +411,7 @@ public class OptionsMenu : MonoBehaviour
         RefreshResOptions();
     }
 
+    // Refreshes the resolution dropdown option labels.
     void RefreshResOptions()
     {
         List<string> options = new List<string>(resList.Count);
@@ -411,6 +426,7 @@ public class OptionsMenu : MonoBehaviour
         resolutionDropdown.AddOptions(options);
     }
 
+    // Returns the current screen resolution fallback.
     Vector2Int CurrentScreenResolution()
     {
         Resolution currentResolution = Screen.currentResolution;
@@ -423,17 +439,20 @@ public class OptionsMenu : MonoBehaviour
         return new Vector2Int(Mathf.Max(1, Screen.width), Mathf.Max(1, Screen.height));
     }
 
+    // Returns the aspect ratio for a resolution value.
     float Aspect(Vector2Int resolution)
     {
         return resolution.y <= 0 ? 1f : (float)resolution.x / resolution.y;
     }
 
+    // Populates quality dropdown options from QualitySettings.
     void PopulateQualityDropdown()
     {
         graphicsQualityDropdown.ClearOptions();
         graphicsQualityDropdown.AddOptions(new List<string>(QualitySettings.names));
     }
 
+    // Ensures dropdown helper components exist on all dropdown controls.
     void EnableDropdownHelpers()
     {
         AddDropdownHelper(displayModeDropdown);
@@ -442,6 +461,7 @@ public class OptionsMenu : MonoBehaviour
         AddDropdownHelper(crosshairColorDropdown);
     }
 
+    // Adds a DropdownHelper component when missing.
     void AddDropdownHelper(TMP_Dropdown dropdown)
     {
         if (dropdown.GetComponent<DropdownHelper>() == null)
@@ -471,6 +491,7 @@ public class OptionsMenu : MonoBehaviour
         }
     }
 
+    // Registers click listeners for tab buttons once.
     void RegisterTabs()
     {
         if (tabsRegistered)
@@ -490,6 +511,7 @@ public class OptionsMenu : MonoBehaviour
         tabsRegistered = true;
     }
 
+    // Unregisters previously bound tab button listeners.
     void UnregisterTabs()
     {
         if (!tabsRegistered)
@@ -510,6 +532,7 @@ public class OptionsMenu : MonoBehaviour
         tabsRegistered = false;
     }
 
+    // Closes options from pause input when appropriate.
     void OnPauseInput(InputAction.CallbackContext context)
     {
         if (!context.performed)
@@ -528,6 +551,7 @@ public class OptionsMenu : MonoBehaviour
         }
     }
 
+    // Caches optional menu references from the active scene.
     void CacheRefs()
     {
         if (pauseMenuRef == null)
@@ -541,23 +565,29 @@ public class OptionsMenu : MonoBehaviour
         }
     }
 
+    // Loads all persisted options and applies them to runtime state.
     void LoadPrefs()
     {
         applyingLoadedPrefs = true;
 
         try
         {
+            // Apply display mode before resolution so the filtered list is valid.
             int savedModeOption = PrefHasKey(PrefKey.DisplayMode) ? PrefGetInt(PrefKey.DisplayMode) : (int)ModeOption.Borderless;
             displayModeOption = ClampModeOption(savedModeOption);
             displayModeDropdown.SetValueWithoutNotify((int)displayModeOption);
             displayModeDropdown.RefreshShownValue();
             ApplyDisplayMode(displayModeOption, false);
             RebuildResolutionList(displayModeOption);
+
+            // Restore resolution index against the mode-filtered resolution list.
             int resolutionIndex = GetSavedResIndex();
             manualResIndex = resolutionIndex;
             resolutionDropdown.SetValueWithoutNotify(resolutionIndex);
             resolutionDropdown.RefreshShownValue();
             ApplyResMode(displayModeOption, wasBorderless: false);
+
+            // Restore quality using dropdown-safe and quality-safe clamping.
             int savedQualityIndex = PrefGetInt(PrefKey.QualityLevel, QualitySettings.GetQualityLevel());
             savedQualityIndex = Mathf.Clamp(savedQualityIndex, 0, Mathf.Max(0, QualitySettings.names.Length - 1));
             int qualityDropdownIndex = GetQualityDropdownIndex(savedQualityIndex);
@@ -565,6 +595,8 @@ public class OptionsMenu : MonoBehaviour
             graphicsQualityDropdown.SetValueWithoutNotify(qualityDropdownIndex);
             graphicsQualityDropdown.RefreshShownValue();
             ApplyQualityOption(qualityDropdownIndex, false);
+
+            // Restore owner-camera controls with explicit runtime slider ranges.
             float fov = SavedFov(DefaultFov);
             cameraFovSlider.minValue = MinFov;
             cameraFovSlider.maxValue = MaxFov;
@@ -576,6 +608,8 @@ public class OptionsMenu : MonoBehaviour
             cameraSensitivitySlider.wholeNumbers = true;
             cameraSensitivitySlider.SetValueWithoutNotify(sensitivityPercent);
             ApplyCameraSensitivity(sensitivityPercent, false);
+
+            // Restore all mixer-controlled volume channels as percentages.
             float masterVolume = Mathf.Clamp(PrefGetFloat(PrefKey.MasterVolume, DefaultVolumePercent), 0f, 100f);
             masterVolSlider.minValue = 0f;
             masterVolSlider.maxValue = 100f;
@@ -601,6 +635,8 @@ public class OptionsMenu : MonoBehaviour
             menuMusicSlider.maxValue = 100f;
             menuMusicSlider.SetValueWithoutNotify(menuMusicVolume);
             ApplyVolume(menuMusicVolume, MixerName(MixerParam.MenuMusic), PrefKey.MenuMusic, false, false);
+
+            // Restore crosshair shape and color settings.
             float crosshairSize = Mathf.Clamp(PrefGetFloat(PrefKey.CrosshairSize, DefaultCrosshairVal), MinCrosshairSize, MaxCrosshairSize);
             crosshairSizeSlider.minValue = MinCrosshairSize;
             crosshairSizeSlider.maxValue = MaxCrosshairSize;
@@ -610,6 +646,8 @@ public class OptionsMenu : MonoBehaviour
             crosshairColorDropdown.SetValueWithoutNotify(crosshairColorIndex);
             crosshairColorDropdown.RefreshShownValue();
             ApplyCrosshairColor(crosshairColorIndex, false);
+
+            // Restore HUD visibility toggles as persisted integer flags.
             bool showFps = PrefGetInt(PrefKey.ShowFps, DefaultHudOn) == 1;
             showFpsToggle.SetValue(showFps, false);
             ApplyHudWidget(fpsWidget, showFps, PrefKey.ShowFps, false);
@@ -622,10 +660,12 @@ public class OptionsMenu : MonoBehaviour
         }
         finally
         {
+            // Re-enable save-on-change callbacks after load/apply completes.
             applyingLoadedPrefs = false;
         }
     }
 
+    // Returns the saved resolution index or the closest fallback.
     int GetSavedResIndex()
     {
         if (resList.Count == 0)
@@ -654,6 +694,7 @@ public class OptionsMenu : MonoBehaviour
         int closestIndex = 0;
         long closestDistance = long.MaxValue;
 
+        // Choose nearest available resolution when exact saved size is missing.
         for (int i = 0; i < resList.Count; i++)
         {
             long dx = resList[i].x - defaultWidth;
@@ -670,11 +711,13 @@ public class OptionsMenu : MonoBehaviour
         return closestIndex;
     }
 
+    // Clamps an integer to a valid display mode option.
     ModeOption ClampModeOption(int option)
     {
         return (ModeOption)Mathf.Clamp(option, (int)ModeOption.Windowed, (int)ModeOption.Fullscreen);
     }
 
+    // Maps a mode option enum to Unity fullscreen mode.
     FullScreenMode GetDisplayModeFromOption(ModeOption option)
     {
         switch (option)
@@ -690,36 +733,43 @@ public class OptionsMenu : MonoBehaviour
         }
     }
 
+    // Returns the currently selected display mode option.
     ModeOption GetModeOption()
     {
         return ClampModeOption(displayModeDropdown.value);
     }
 
+    // Returns the Unity fullscreen mode for the selected option.
     FullScreenMode GetMode()
     {
         return GetDisplayModeFromOption(GetModeOption());
     }
 
+    // Returns whether the selected option is borderless mode.
     bool IsBorderlessOption(ModeOption option)
     {
         return option == ModeOption.Borderless;
     }
 
+    // Returns whether the selected option is fullscreen mode.
     bool IsFullscreenOption(ModeOption option)
     {
         return option == ModeOption.Fullscreen;
     }
 
+    // Returns the clamped current resolution dropdown index.
     int GetCurrentResIndex()
     {
         return Mathf.Clamp(resolutionDropdown.value, 0, Mathf.Max(0, resList.Count - 1));
     }
 
+    // Sets whether the resolution dropdown is interactable.
     void SetResolutionInteractable(bool isInteractable)
     {
         resolutionDropdown.interactable = isInteractable;
     }
 
+    // Sets the resolution dropdown value safely.
     void SetResolutionValue(int index)
     {
         if (resList.Count == 0)
@@ -732,6 +782,7 @@ public class OptionsMenu : MonoBehaviour
         resolutionDropdown.RefreshShownValue();
     }
 
+    // Applies resolution behavior for the selected display mode.
     void ApplyResMode(ModeOption displayModeOption, bool wasBorderless)
     {
         if (resList.Count == 0)
@@ -748,12 +799,14 @@ public class OptionsMenu : MonoBehaviour
             return;
         }
 
+        // Leaving borderless returns to the last manual selection.
         SetResolutionInteractable(true);
         int targetIndex = wasBorderless ? Mathf.Clamp(manualResIndex, 0, resList.Count - 1) : GetCurrentResIndex();
         SetResolutionValue(targetIndex);
         ApplyResolution(targetIndex, false);
     }
 
+    // Returns a valid quality dropdown index.
     int GetQualityDropdownIndex(int qualityIndex)
     {
         if (graphicsQualityDropdown.options.Count == 0)
@@ -764,6 +817,7 @@ public class OptionsMenu : MonoBehaviour
         return Mathf.Clamp(qualityIndex, 0, graphicsQualityDropdown.options.Count - 1);
     }
 
+    // Maps dropdown option index to quality level index.
     int GetQualityFromOption(int optionIndex)
     {
         return Mathf.Clamp(optionIndex, 0, Mathf.Max(0, QualitySettings.names.Length - 1));
@@ -805,6 +859,7 @@ public class OptionsMenu : MonoBehaviour
         ApplyResolution(clampedIndex, true);
     }
 
+    // Applies the selected display mode and optionally saves it.
     void ApplyDisplayMode(ModeOption option, bool save)
     {
         FullScreenMode mode = GetDisplayModeFromOption(option);
@@ -816,6 +871,7 @@ public class OptionsMenu : MonoBehaviour
         }
     }
 
+    // Applies the selected resolution and optionally saves it.
     void ApplyResolution(int optionIndex, bool save)
     {
         if (resList.Count == 0)
@@ -836,6 +892,7 @@ public class OptionsMenu : MonoBehaviour
         }
     }
 
+    // Applies quality level and optionally saves it.
     void ApplyQualityOption(int optionIndex, bool save)
     {
         int qualityIndex = GetQualityFromOption(Mathf.Clamp(optionIndex, 0, Mathf.Max(0, graphicsQualityDropdown.options.Count - 1)));
@@ -848,6 +905,7 @@ public class OptionsMenu : MonoBehaviour
         }
     }
 
+    // Applies camera FOV to owner camera and optionally saves it.
     void ApplyCameraFov(float fov, bool save)
     {
         float clamped = Mathf.Clamp(fov, MinFov, MaxFov);
@@ -864,6 +922,7 @@ public class OptionsMenu : MonoBehaviour
         }
     }
 
+    // Applies camera sensitivity to owner movement and optionally saves it.
     void ApplyCameraSensitivity(float sensitivityPercent, bool save)
     {
         float clampedPercent = Mathf.Clamp(sensitivityPercent, MinSensitivityPercent, 100f);
@@ -882,6 +941,7 @@ public class OptionsMenu : MonoBehaviour
         }
     }
 
+    // Applies a volume percentage to mixer and optionally saves it.
     void ApplyVolume(float percentValue, string exposedParamName, PrefKey prefKey, bool save, bool fallbackToListener)
     {
         float clamped = Mathf.Clamp(percentValue, 0f, 100f);
@@ -899,6 +959,7 @@ public class OptionsMenu : MonoBehaviour
         }
     }
 
+    // Sets a mixer parameter from normalized linear volume.
     bool SetMixerVol(string paramName, float normalized)
     {
         if (string.IsNullOrWhiteSpace(paramName))
@@ -909,6 +970,7 @@ public class OptionsMenu : MonoBehaviour
         return audioMixer.SetFloat(paramName.Trim(), LinearToDecibel(normalized));
     }
 
+    // Returns mixer exposed parameter name by enum value.
     static string MixerName(MixerParam param)
     {
         switch (param)
@@ -922,6 +984,7 @@ public class OptionsMenu : MonoBehaviour
         }
     }
 
+    // Finds and caches the owner PlayerMovement component.
     PlayerMovement GetOwnerPlayer()
     {
         if (ownerPlayer != null && ownerPlayer.IsOwner)
@@ -944,6 +1007,7 @@ public class OptionsMenu : MonoBehaviour
         return null;
     }
 
+    // Converts linear volume to decibel value for the mixer.
     float LinearToDecibel(float linear)
     {
         if (linear <= MinLinearVolume)
@@ -954,6 +1018,7 @@ public class OptionsMenu : MonoBehaviour
         return Mathf.Log10(linear) * 20f;
     }
 
+    // Applies crosshair size and optionally saves it.
     void ApplyCrosshairSize(float sliderValue, bool save)
     {
         float clamped = Mathf.Clamp(sliderValue, MinCrosshairSize, MaxCrosshairSize);
@@ -974,6 +1039,7 @@ public class OptionsMenu : MonoBehaviour
         }
     }
 
+    // Applies crosshair color and optionally saves it.
     void ApplyCrosshairColor(int colorIndex, bool save)
     {
         int clamped = Mathf.Clamp(colorIndex, 0, CrossCols.Length - 1);
@@ -989,6 +1055,7 @@ public class OptionsMenu : MonoBehaviour
         }
     }
 
+    // Applies HUD widget visibility and optionally saves it.
     void ApplyHudWidget(GameObject widget, bool isVisible, PrefKey prefKey, bool save)
     {
         if (widget != null)
@@ -1002,6 +1069,7 @@ public class OptionsMenu : MonoBehaviour
         }
     }
 
+    // Validates required options menu references.
     void EnsureSetup()
     {
         if (displayModeDropdown == null)

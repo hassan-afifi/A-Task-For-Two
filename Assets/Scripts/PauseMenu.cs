@@ -26,12 +26,15 @@ public class PauseMenu : MonoBehaviour
 
     // Notifies listeners when pause state changes.
     public static event Action<bool> PauseStateChanged;
+
+    // Validates references and creates input action instances.
     void Awake()
     {
         EnsureSetup();
         input = new InputActions();
     }
 
+    // Enables pause bindings and refreshes join code text.
     void OnEnable()
     {
         input.System.Pause.performed += OnPauseInput;
@@ -40,6 +43,7 @@ public class PauseMenu : MonoBehaviour
         RefreshJoinCode(true);
     }
 
+    // Toggles menu visibility and updates input and cursor states.
     void Toggle()
     {
         if (isOpen)
@@ -135,6 +139,7 @@ public class PauseMenu : MonoBehaviour
         }
     }
 
+    // Unsubscribes pause input and closes menu state when disabled.
     void OnDisable()
     {
         if (input != null)
@@ -147,6 +152,7 @@ public class PauseMenu : MonoBehaviour
         ResetPause();
     }
 
+    // Resets pause state and disposes input resources on destroy.
     void OnDestroy()
     {
         ResetPause();
@@ -171,6 +177,7 @@ public class PauseMenu : MonoBehaviour
         codeCopiedAnimator.SetTrigger(copiedTrigger);
     }
 
+    // Forces all pause UI state back to closed defaults.
     void ResetPause()
     {
         bool wasOpen = isOpen;
@@ -191,6 +198,7 @@ public class PauseMenu : MonoBehaviour
         }
     }
 
+    // Shows or hides the gameplay HUD canvas.
     void SetHud(bool isVisible)
     {
         if (hudCanvas != null)
@@ -199,23 +207,27 @@ public class PauseMenu : MonoBehaviour
         }
     }
 
+    // Shows the main pause page.
     void ShowMain()
     {
         SetPages(showOptions: false);
     }
 
+    // Hides all pause pages.
     void HidePages()
     {
         SetActiveSafe(pauseMainPanel, false);
         SetActiveSafe(optionsMenuPanel, false);
     }
 
+    // Switches between the main and options pause pages.
     void SetPages(bool showOptions)
     {
         SetActiveSafe(pauseMainPanel, !showOptions);
         SetActiveSafe(optionsMenuPanel, showOptions);
     }
 
+    // Resets the copied-code animation state.
     void ResetCopy()
     {
         if (codeCopiedAnimator == null || codeCopiedAnimator.gameObject == null || !codeCopiedAnimator.gameObject.activeInHierarchy)
@@ -227,15 +239,17 @@ public class PauseMenu : MonoBehaviour
         codeCopiedAnimator.Update(0f);
     }
 
+    // Maps trigger keys to animator trigger names.
     static string Trigger(TriggerName trigger)
     {
         switch (trigger)
         {
         case TriggerName.Copied: return "Copied";
-        default: throw new ArgumentOutOfRangeException(nameof(trigger), trigger, null);
+            default: throw new ArgumentOutOfRangeException(nameof(trigger), trigger, null);
         }
     }
 
+    // Updates join code text only when value changes or forced.
     void RefreshJoinCode(bool force)
     {
         string joinCode = string.Empty;
@@ -254,6 +268,7 @@ public class PauseMenu : MonoBehaviour
         joinCodeText.text = joinCode;
     }
 
+    // Resets the embedded options menu to its default tab.
     void ResetOptionsTab()
     {
         OptionsMenu menu = FindOptionsMenu();
@@ -264,6 +279,7 @@ public class PauseMenu : MonoBehaviour
         }
     }
 
+    // Finds an options menu component near the options panel.
     OptionsMenu FindOptionsMenu()
     {
         if (optionsMenuPanel == null)
@@ -302,6 +318,7 @@ public class PauseMenu : MonoBehaviour
         return null;
     }
 
+    // Handles pause input and routes to close options or toggle pause.
     void OnPauseInput(InputAction.CallbackContext context)
     {
         if (!context.performed)
@@ -333,6 +350,7 @@ public class PauseMenu : MonoBehaviour
         Toggle();
     }
 
+    // Sets a GameObject active only when the reference exists.
     static void SetActiveSafe(GameObject target, bool isActive)
     {
         if (target != null)
@@ -341,6 +359,7 @@ public class PauseMenu : MonoBehaviour
         }
     }
 
+    // Throws when required pause menu references are missing.
     void EnsureSetup()
     {
         if (panel == null)

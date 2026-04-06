@@ -21,6 +21,8 @@ public class PlayerAudio : NetworkBehaviour
     private bool jumpAirborne;
     private readonly List<ulong> targetClientIds = new List<ulong>(4);
     private readonly ulong[] singleTargetId = new ulong[1];
+
+    // Resolves required references and configures loop source defaults.
     void Awake()
     {
         playerMovement = GetComponent<PlayerMovement>();
@@ -65,6 +67,7 @@ public class PlayerAudio : NetworkBehaviour
         base.OnNetworkDespawn();
     }
 
+    // Drives local loop/landing state and syncs audio events.
     void Update()
     {
         if (!IsSpawned)
@@ -91,6 +94,7 @@ public class PlayerAudio : NetworkBehaviour
 
         if (IsOwner)
         {
+            // Owner decides movement audio state and replicates to other clients.
             bool grounded = playerMovement.IsGrounded;
             bool menuBlocking = PauseMenu.isOpen || ConnectionLost.IsShown;
             Vector3 move = playerMovement.FinalMove;
@@ -100,6 +104,7 @@ public class PlayerAudio : NetworkBehaviour
 
             if (playerMovement.JumpTriggered)
             {
+                // Track jump state to play landing only for real jump landings.
                 jumpStarted = true;
             }
 
@@ -141,18 +146,21 @@ public class PlayerAudio : NetworkBehaviour
         SetLoop(syncLoop, syncPitch);
     }
 
+    // Relays loop state changes through the server.
     [ServerRpc]
     void LoopServerRpc(bool shouldPlay, float pitch)
     {
         PushLoopClient(shouldPlay, pitch);
     }
 
+    // Relays landing events through the server.
     [ServerRpc]
     void PlayLandServerRpc()
     {
         SendLandClient();
     }
 
+    // Applies synchronized loop state on target clients.
     [ClientRpc]
     void LoopClientRpc(bool shouldPlay, float pitch, ClientRpcParams clientRpcParams = default)
     {
@@ -161,12 +169,14 @@ public class PlayerAudio : NetworkBehaviour
         SetLoop(syncLoop, syncPitch);
     }
 
+    // Plays landing audio on target clients.
     [ClientRpc]
     void PlayLandClientRpc(ClientRpcParams clientRpcParams = default)
     {
         PlayLand();
     }
 
+    // Returns whether loop playback state changed enough to sync.
     bool LoopChanged(bool shouldPlay, float pitch)
     {
         if (syncLoop != shouldPlay)
@@ -177,6 +187,7 @@ public class PlayerAudio : NetworkBehaviour
         return shouldPlay && !Mathf.Approximately(syncPitch, pitch);
     }
 
+    // Returns the movement loop pitch based on movement mode.
     float MovePitch()
     {
         if (playerMovement.IsRunning)
@@ -192,6 +203,7 @@ public class PlayerAudio : NetworkBehaviour
         return 1f;
     }
 
+    // Sends loop state to other clients.
     void PushLoop(bool shouldPlay, float pitch)
     {
         if (IsServer)
@@ -203,6 +215,7 @@ public class PlayerAudio : NetworkBehaviour
         LoopServerRpc(shouldPlay, pitch);
     }
 
+    // Sends landing event to other clients.
     void PushLand()
     {
         if (IsServer)
@@ -214,6 +227,7 @@ public class PlayerAudio : NetworkBehaviour
         PlayLandServerRpc();
     }
 
+    // Dispatches loop state update to all non-owner clients.
     void PushLoopClient(bool shouldPlay, float pitch)
     {
         ulong[] targetClientIds = TargetIds();
@@ -224,6 +238,7 @@ public class PlayerAudio : NetworkBehaviour
         }
 
         LoopClientRpc(shouldPlay, pitch,
+        // Target all peers except the local owner client.
         new ClientRpcParams
         {
             Send = new ClientRpcSendParams
@@ -235,6 +250,7 @@ public class PlayerAudio : NetworkBehaviour
         );
     }
 
+    // Dispatches landing sound event to all non-owner clients.
     void SendLandClient()
     {
         ulong[] targetClientIds = TargetIds();
@@ -245,6 +261,7 @@ public class PlayerAudio : NetworkBehaviour
         }
 
         PlayLandClientRpc(
+        // Target all peers except the local owner client.
         new ClientRpcParams
         {
             Send = new ClientRpcSendParams
@@ -256,6 +273,7 @@ public class PlayerAudio : NetworkBehaviour
         );
     }
 
+    // Builds target client list excluding the owner.
     ulong[] TargetIds()
     {
         if (NetworkManager == null)
@@ -289,6 +307,7 @@ public class PlayerAudio : NetworkBehaviour
         return targetClientIds.ToArray();
     }
 
+    // Starts or stops the local movement loop source.
     void SetLoop(bool shouldPlay, float pitch)
     {
         loopAudioSource.volume = 1f;
@@ -304,6 +323,7 @@ public class PlayerAudio : NetworkBehaviour
 
             if (loopOn)
             {
+                // Recover if the source was interrupted externally.
                 if (!loopAudioSource.isPlaying)
                 {
                     loopAudioSource.Play();
@@ -331,12 +351,14 @@ public class PlayerAudio : NetworkBehaviour
         loopOn = false;
     }
 
+    // Plays a one-shot landing sound locally.
     void PlayLand()
     {
         loopAudioSource.pitch = 1f;
         loopAudioSource.PlayOneShot(landClip, 1f);
     }
 
+    // Applies base loop source settings.
     void InitLoop()
     {
         loopAudioSource.playOnAwake = false;

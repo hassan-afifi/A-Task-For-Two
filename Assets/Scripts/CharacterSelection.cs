@@ -26,10 +26,13 @@ public class CharacterSelection : MonoBehaviour
     private int rotVal = 1;
     private bool maleGroup = true;
     private bool inTransit;
+
+    // Builds the character list and restores the saved selection.
     void Start()
     {
         EnsureSetup();
 
+        // Disable local-only carousel when this object is part of an active net session.
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && GetComponent<NetworkObject>() != null)
         {
             enabled = false;
@@ -45,6 +48,7 @@ public class CharacterSelection : MonoBehaviour
             bool hasCharacterVisual = child.GetComponentInChildren<Animator>(true) != null || child.GetComponentInChildren<SkinnedMeshRenderer>(true) != null;
             bool hasCamera = child.GetComponentInChildren<Camera>(true) != null;
 
+            // Ignore non-character helpers and preview cameras in the same hierarchy.
             if (!hasCharacterVisual || hasCamera)
             {
                 continue;
@@ -123,6 +127,7 @@ public class CharacterSelection : MonoBehaviour
         StartCoroutine(RotateCarousel(1));
     }
 
+    // Animates one carousel step within the active gender group.
     IEnumerator RotateCarousel(int step)
     {
         int groupCount = GroupCount();
@@ -141,6 +146,7 @@ public class CharacterSelection : MonoBehaviour
 
         if (groupCount < 3)
         {
+            // With two or fewer models, snap immediately instead of doing carousel arcs.
             rotVal = targetSlot + 1;
             index = SlotIndex(CurSlot());
             ApplyLayout();
@@ -168,6 +174,7 @@ public class CharacterSelection : MonoBehaviour
 
         if (step > 0)
         {
+            // Clockwise shift: prev -> back, current -> prev, next -> current.
             startAngles[oldPrev] = 120f;
             startAngles[oldCurrent] = 0f;
             startAngles[oldNext] = -120f;
@@ -177,6 +184,7 @@ public class CharacterSelection : MonoBehaviour
         }
         else
         {
+            // Counter-clockwise shift: prev -> current, current -> next, next -> back.
             startAngles[oldPrev] = 120f;
             startAngles[oldCurrent] = 0f;
             startAngles[oldNext] = -120f;
@@ -192,6 +200,7 @@ public class CharacterSelection : MonoBehaviour
         {
             elapsed += Time.unscaledDeltaTime;
             float t = Mathf.Clamp01(elapsed / duration);
+            // Smoothstep easing keeps carousel motion readable.
             float eased = t * t * (3f - 2f * t);
 
             for (int i = 0; i < characters.Length; i++)
@@ -216,6 +225,7 @@ public class CharacterSelection : MonoBehaviour
         inTransit = false;
     }
 
+    // Applies final positions and scale for visible carousel characters.
     void ApplyLayout()
     {
         if (characters.Length == 0)
@@ -249,6 +259,7 @@ public class CharacterSelection : MonoBehaviour
         }
     }
 
+    // Applies a single character pose from a carousel angle.
     void ApplyPose(int characterIndex, float angleDegrees)
     {
         Transform tr = characters[characterIndex].transform;
@@ -260,6 +271,7 @@ public class CharacterSelection : MonoBehaviour
         tr.localScale = baseScales[characterIndex] * scaleFactor;
     }
 
+    // Converts an angle to local carousel position.
     Vector3 AnglePos(float angleDegrees)
     {
         float rad = angleDegrees * Mathf.Deg2Rad;
@@ -268,6 +280,7 @@ public class CharacterSelection : MonoBehaviour
         return center + offset;
     }
 
+    // Updates the visible character name label.
     void UpdateName()
     {
         if (characters.Length == 0)
@@ -280,6 +293,7 @@ public class CharacterSelection : MonoBehaviour
         characterNameText.text = characterName;
     }
 
+    // Saves the currently selected character index.
     void SaveSelection()
     {
         if (GameSession.Instance != null)
@@ -288,6 +302,7 @@ public class CharacterSelection : MonoBehaviour
         }
     }
 
+    // Switches active group layout when the gender toggle changes.
     void OnGenderChanged(bool isMale)
     {
         if (characters.Length == 0 || inTransit)
@@ -303,6 +318,7 @@ public class CharacterSelection : MonoBehaviour
         SaveSelection();
     }
 
+    // Initializes group and slot from a global character index.
     void InitGroup(int globalIndex)
     {
         int clampedIndex = Mathf.Clamp(globalIndex, 0, Mathf.Max(0, characters.Length - 1));
@@ -313,11 +329,13 @@ public class CharacterSelection : MonoBehaviour
         rotVal = slot + 1;
     }
 
+    // Returns the current slot index within the active group.
     int CurSlot()
     {
         return rotVal - 1;
     }
 
+    // Maps a group slot offset to a global character index.
     int SlotIndex(int slot)
     {
         int groupBase = GroupBase();
@@ -325,12 +343,14 @@ public class CharacterSelection : MonoBehaviour
         return Mathf.Clamp(groupBase + WrapIndex(slot, groupCount), 0, characters.Length - 1);
     }
 
+    // Returns the first global index of the active gender group.
     int GroupBase()
     {
         int candidate = maleGroup ? maleStartIndex : femaleStartIndex;
         return Mathf.Clamp(candidate, 0, Mathf.Max(0, characters.Length - 1));
     }
 
+    // Returns how many characters are available in the active group.
     int GroupCount()
     {
         int requested = Mathf.Max(1, charactersPerGender);
@@ -338,6 +358,7 @@ public class CharacterSelection : MonoBehaviour
         return Mathf.Clamp(requested, 1, available);
     }
 
+    // Unregisters the gender change callback on destroy.
     void OnDestroy()
     {
         if (genderToggleUI != null)
@@ -346,6 +367,7 @@ public class CharacterSelection : MonoBehaviour
         }
     }
 
+    // Wraps an index into a valid range.
     int WrapIndex(int value, int length)
     {
         if (length <= 0)
@@ -363,6 +385,7 @@ public class CharacterSelection : MonoBehaviour
         return value;
     }
 
+    // Validates required character selection references.
     void EnsureSetup()
     {
         if (charactersParent == null)

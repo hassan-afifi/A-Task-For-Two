@@ -25,6 +25,8 @@ public class AnimatedToggle : MonoBehaviour
 
     // Returns the current toggle state.
     public bool IsOn => isOn;
+
+    // Validates setup and binds the toggle button callback.
     void Awake()
     {
         onValueChanged ??= new ToggleChangedEvent();
@@ -33,6 +35,7 @@ public class AnimatedToggle : MonoBehaviour
         toggleButton.onClick.AddListener(Toggle);
     }
 
+    // Unbinds the toggle button callback on destroy.
     void OnDestroy()
     {
         toggleButton.onClick.RemoveListener(Toggle);
@@ -63,6 +66,7 @@ public class AnimatedToggle : MonoBehaviour
         }
     }
 
+    // Moves the selector rect to match the current toggle state.
     void ApplyPos()
     {
         Vector2 anchoredPosition = selectorRect.anchoredPosition;
@@ -70,6 +74,7 @@ public class AnimatedToggle : MonoBehaviour
         selectorRect.anchoredPosition = anchoredPosition;
     }
 
+    // Validates required toggle references.
     void EnsureSetup()
     {
         toggleButton ??= GetComponent<Button>();

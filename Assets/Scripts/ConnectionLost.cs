@@ -10,24 +10,29 @@ public class ConnectionLost : MonoBehaviour
 
     // Tracks whether the disconnect screen is currently shown.
     public static bool IsShown;
+
+    // Initializes required references and starts hidden.
     void Awake()
     {
         EnsureSetup();
         HideNow();
     }
 
+    // Resets state and subscribes to network disconnect events.
     void OnEnable()
     {
         HideNow();
         Subscribe();
     }
 
+    // Unsubscribes and clears shown state when disabled.
     void OnDisable()
     {
         Unsubscribe();
         IsShown = false;
     }
 
+    // Unsubscribes and clears shown state when destroyed.
     void OnDestroy()
     {
         Unsubscribe();
@@ -48,6 +53,7 @@ public class ConnectionLost : MonoBehaviour
         MenuActions.ExitGame();
     }
 
+    // Hooks the local disconnect callback when networking is available.
     void Subscribe()
     {
         if (NetworkManager.Singleton == null)
@@ -59,6 +65,7 @@ public class ConnectionLost : MonoBehaviour
         NetworkManager.Singleton.OnClientDisconnectCallback += OnClientLeft;
     }
 
+    // Unhooks the local disconnect callback when networking is available.
     void Unsubscribe()
     {
         if (NetworkManager.Singleton == null)
@@ -69,6 +76,7 @@ public class ConnectionLost : MonoBehaviour
         NetworkManager.Singleton.OnClientDisconnectCallback -= OnClientLeft;
     }
 
+    // Shows the disconnect screen when this client is unexpectedly dropped.
     void OnClientLeft(ulong clientId)
     {
         if (NetworkManager.Singleton == null)
@@ -99,6 +107,7 @@ public class ConnectionLost : MonoBehaviour
         Show();
     }
 
+    // Displays the disconnect UI and unlocks cursor control.
     void Show()
     {
         if (EndScreen.IsShown)
@@ -128,6 +137,7 @@ public class ConnectionLost : MonoBehaviour
         Cursor.visible = true;
     }
 
+    // Hides the disconnect screen and restores HUD visibility.
     void HideNow()
     {
         IsShown = false;
@@ -135,11 +145,13 @@ public class ConnectionLost : MonoBehaviour
         SetHud(true);
     }
 
+    // Toggles the HUD canvas while the disconnect panel is active.
     void SetHud(bool isVisible)
     {
         hudCanvas.enabled = isVisible;
     }
 
+    // Validates required disconnect screen references.
     void EnsureSetup()
     {
         if (panel == null)

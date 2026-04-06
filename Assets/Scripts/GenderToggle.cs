@@ -38,18 +38,22 @@ public class GenderToggle : MonoBehaviour
     private bool initialized;
     private bool blendInit;
     private float lastSelectorX;
+
+    // Validates setup and initializes change event container.
     void Awake()
     {
         EnsureSetup();
         genderChanged ??= new GenderChangedEvent();
     }
 
+    // Applies initial gender state once at startup.
     void Start()
     {
         SetGender(true, true, true);
         initialized = true;
     }
 
+    // Restores current visual state when re-enabled.
     void OnEnable()
     {
         if (!initialized)
@@ -60,6 +64,7 @@ public class GenderToggle : MonoBehaviour
         SetGender(isMale, true, false);
     }
 
+    // Recomputes blended icon colors while selector moves.
     void Update()
     {
         float currentX = selectorRect.anchoredPosition.x;
@@ -100,6 +105,7 @@ public class GenderToggle : MonoBehaviour
         }
     }
 
+    // Synchronizes animator bool/state for current selection.
     void SyncAnim(bool instant)
     {
         selectorAnimator.SetBool(BoolName(BoolParam.IsMale), isMale);
@@ -110,12 +116,14 @@ public class GenderToggle : MonoBehaviour
         }
     }
 
+    // Triggers icon color recompute from current selector position.
     void ApplyColors()
     {
         blendInit = false;
         ApplyBlend();
     }
 
+    // Blends icon colors based on selector x-position.
     void ApplyBlend()
     {
         lastSelectorX = selectorRect.anchoredPosition.x;
@@ -126,6 +134,7 @@ public class GenderToggle : MonoBehaviour
         femaleIconGraphic.color = Color.Lerp(inactiveIconColor, activeIconColor, t);
     }
 
+    // Validates required gender toggle references.
     void EnsureSetup()
     {
         if (selectorAnimator == null)
@@ -149,6 +158,7 @@ public class GenderToggle : MonoBehaviour
         }
     }
 
+    // Returns animator bool parameter name for a toggle field.
     static string BoolName(BoolParam param)
     {
         switch (param)
@@ -158,6 +168,7 @@ public class GenderToggle : MonoBehaviour
         }
     }
 
+    // Returns animator state name for a gender selection state.
     static string StateName(AnimState state)
     {
         switch (state)

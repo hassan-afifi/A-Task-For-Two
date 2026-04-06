@@ -29,6 +29,8 @@ public class PlayerVisuals : NetworkBehaviour
 
     // Returns the animator of the currently active character.
     public Animator ActiveAnimator => activeAnimator;
+
+    // Caches character visuals and prepares initial animator binding.
     void Awake()
     {
         movement = GetComponent<PlayerMovement>();
@@ -55,6 +57,7 @@ public class PlayerVisuals : NetworkBehaviour
 
         if (IsOwner)
         {
+            // Owner pushes local persisted choices into replicated network variables.
             int localChar = SavedChar();
             ShowChar(localChar);
 
@@ -81,6 +84,7 @@ public class PlayerVisuals : NetworkBehaviour
 
             if (PlayerLayer >= 0)
             {
+                // Hide local body meshes from the owner camera by layer routing.
                 SetLayers(gameObject, PlayerLayer);
             }
 
@@ -102,6 +106,7 @@ public class PlayerVisuals : NetworkBehaviour
         base.OnNetworkDespawn();
     }
 
+    // Keeps remote player name tags aligned and facing the local camera.
     void LateUpdate()
     {
         if (IsOwner || !IsSpawned)
@@ -113,6 +118,7 @@ public class PlayerVisuals : NetworkBehaviour
         FaceTag();
     }
 
+    // Aligns the name tag position to the active anchor height.
     void UpdateTagPos()
     {
         Vector3 tagPosition = nameTagRoot.position;
@@ -120,18 +126,21 @@ public class PlayerVisuals : NetworkBehaviour
         nameTagRoot.position = tagPosition;
     }
 
+    // Updates selected character index on the server.
     [ServerRpc]
     void SetCharServerRpc(int index)
     {
         netChar.Value = Wrap(index, characterVisuals.Count);
     }
 
+    // Updates player name on the server.
     [ServerRpc]
     void SetNameServerRpc(FixedString64Bytes playerName)
     {
         netName.Value = new FixedString64Bytes(CleanName(playerName.ToString()));
     }
 
+    // Rebuilds cached character roots and animator references.
     void CacheChars()
     {
         characterVisuals.Clear();
@@ -139,6 +148,7 @@ public class PlayerVisuals : NetworkBehaviour
 
         foreach (Transform child in transform)
         {
+            // Skip camera containers and keep only actual character visual roots.
             if (child.GetComponentInChildren<Camera>(true) != null)
             {
                 continue;
@@ -156,16 +166,19 @@ public class PlayerVisuals : NetworkBehaviour
         }
     }
 
+    // Applies replicated character selection changes.
     void OnChar(int _, int currentValue)
     {
         ShowChar(currentValue);
     }
 
+    // Applies replicated player name changes.
     void OnName(FixedString64Bytes _, FixedString64Bytes currentValue)
     {
         ShowName(currentValue.ToString());
     }
 
+    // Shows one character visual and updates animator/name anchor bindings.
     void ShowChar(int index)
     {
         if (characterVisuals.Count == 0)
@@ -175,6 +188,7 @@ public class PlayerVisuals : NetworkBehaviour
 
         int wrappedIndex = Wrap(index, characterVisuals.Count);
 
+        // Keep exactly one visual root active at a time.
         for (int i = 0; i < characterVisuals.Count; i++)
         {
             characterVisuals[i].SetActive(i == wrappedIndex);
@@ -193,6 +207,7 @@ public class PlayerVisuals : NetworkBehaviour
         networkAnimator.Animator = selectedAnimator;
     }
 
+    // Reads locally saved character index fallback.
     int SavedChar()
     {
         if (GameSession.Instance != null)
@@ -203,6 +218,7 @@ public class PlayerVisuals : NetworkBehaviour
         return 0;
     }
 
+    // Finds the name tag anchor under a character root.
     Transform FindTagAnchor(Transform root)
     {
         Transform[] allTransforms = root.GetComponentsInChildren<Transform>(true);
@@ -218,6 +234,7 @@ public class PlayerVisuals : NetworkBehaviour
         return null;
     }
 
+    // Reads locally saved player name fallback.
     string SavedName()
     {
         if (GameSession.Instance == null)
@@ -228,6 +245,7 @@ public class PlayerVisuals : NetworkBehaviour
         return CleanName(GameSession.Instance.PlayerName);
     }
 
+    // Normalizes name text and applies default/length constraints.
     string CleanName(string value)
     {
         string cleaned = string.IsNullOrWhiteSpace(value) ? DefaultPlayerName : value.Trim();
@@ -240,11 +258,13 @@ public class PlayerVisuals : NetworkBehaviour
         return cleaned;
     }
 
+    // Writes normalized name text to the tag label.
     void ShowName(string value)
     {
         nameTagText.text = CleanName(value);
     }
 
+    // Rotates remote name tag to face the current camera.
     void FaceTag()
     {
         Camera currentCamera = MainCamera();
@@ -264,6 +284,7 @@ public class PlayerVisuals : NetworkBehaviour
         nameTagRoot.rotation = Quaternion.LookRotation(lookDirection, Vector3.up);
     }
 
+    // Returns the active local gameplay camera fallback.
     Camera MainCamera()
     {
         if (PlayerMovement.LocalCamera != null && PlayerMovement.LocalCamera.isActiveAndEnabled)
@@ -274,6 +295,7 @@ public class PlayerVisuals : NetworkBehaviour
         return Camera.main;
     }
 
+    // Wraps index values into a valid range.
     int Wrap(int value, int length)
     {
         if (length <= 0)
@@ -291,6 +313,7 @@ public class PlayerVisuals : NetworkBehaviour
         return value;
     }
 
+    // Validates required visual sync references.
     void EnsureSetup()
     {
         if (nameTagRoot == null)
@@ -304,6 +327,7 @@ public class PlayerVisuals : NetworkBehaviour
         }
     }
 
+    // Applies a layer recursively while excluding camera and name tag hierarchy.
     void SetLayers(GameObject obj, int newLayer)
     {
         if (obj.GetComponent<Camera>() != null || obj.transform == nameTagRoot || obj.transform.IsChildOf(nameTagRoot))

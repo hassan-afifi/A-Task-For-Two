@@ -14,6 +14,8 @@ public class DropdownHelper : MonoBehaviour
     private bool arrowVisible;
     private bool arrowInit;
     private Coroutine centerRoutine;
+
+    // Caches dropdown references and applies initial arrow state.
     void Awake()
     {
         dropdown = GetComponent<TMP_Dropdown>();
@@ -26,6 +28,7 @@ public class DropdownHelper : MonoBehaviour
         UpdateArrow(true);
     }
 
+    // Refreshes arrow state when the object becomes enabled.
     void OnEnable()
     {
         if (arrowGraphic == null)
@@ -36,6 +39,7 @@ public class DropdownHelper : MonoBehaviour
         UpdateArrow(true);
     }
 
+    // Detects dropdown open transitions and starts centering.
     void LateUpdate()
     {
         UpdateArrow(false);
@@ -54,6 +58,7 @@ public class DropdownHelper : MonoBehaviour
         wasExpanded = isExpanded;
     }
 
+    // Shows or hides the arrow graphic from dropdown state.
     void UpdateArrow(bool force)
     {
         bool shouldShow = dropdown.IsInteractable();
@@ -68,6 +73,7 @@ public class DropdownHelper : MonoBehaviour
         arrowInit = true;
     }
 
+    // Centers the open dropdown list on the selected item.
     IEnumerator CenterOnOpen()
     {
         yield return null;
@@ -102,6 +108,7 @@ public class DropdownHelper : MonoBehaviour
         centerRoutine = null;
     }
 
+    // Calculates item height from content or fallback estimate.
     float GetItemHeight(RectTransform content, int optionCount)
     {
         if (content.childCount > 0)
@@ -123,6 +130,7 @@ public class DropdownHelper : MonoBehaviour
         return Mathf.Max(1f, estimated);
     }
 
+    // Finds the currently active open dropdown scroll list.
     ScrollRect FindOpenList()
     {
         Canvas canvas = GetComponentInParent<Canvas>();

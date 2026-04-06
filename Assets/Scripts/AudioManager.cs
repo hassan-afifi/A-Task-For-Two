@@ -10,6 +10,8 @@ public class AudioManager : MonoBehaviour
     [SerializeField] private AudioSource uiAudioSource;
     [SerializeField] private AudioClip buttonHoverClip;
     [SerializeField] private AudioClip buttonClickClip;
+
+    // Enforces singleton lifetime and keeps it across scene loads.
     void Awake()
     {
         if (Instance != null && Instance != this)
@@ -23,6 +25,7 @@ public class AudioManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
+    // Clears singleton reference when this instance is destroyed.
     void OnDestroy()
     {
         if (Instance == this)
@@ -53,6 +56,7 @@ public class AudioManager : MonoBehaviour
         Instance.PlayOneShot(Instance.buttonClickClip, 1f);
     }
 
+    // Plays one UI clip through the shared audio source.
     void PlayOneShot(AudioClip clip, float volume)
     {
         if (clip == null)

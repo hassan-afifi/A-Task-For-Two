@@ -15,6 +15,8 @@ public class RelayManager : MonoBehaviour
 {
     private string gameSceneName = "Game";
     private bool isBusy;
+
+    // Unhooks network callbacks when this object is destroyed.
     void OnDestroy()
     {
         if (NetworkManager.Singleton != null)
@@ -23,6 +25,7 @@ public class RelayManager : MonoBehaviour
         }
     }
 
+    // Initializes Unity Services and authenticates anonymously.
     async Task InitServices()
     {
         if (UnityServices.State == ServicesInitializationState.Uninitialized)
@@ -73,6 +76,7 @@ public class RelayManager : MonoBehaviour
             Allocation allocation = await RelayService.Instance.CreateAllocationAsync(1);
             string joinCode = await RelayService.Instance.GetJoinCodeAsync(allocation.AllocationId);
             GameSession.Instance.JoinCode = joinCode;
+            // Use host connection data for both ends on the host transport.
             transport.SetRelayServerData(allocation.RelayServer.IpV4, (ushort)allocation.RelayServer.Port, allocation.AllocationIdBytes, allocation.Key, allocation.ConnectionData, allocation.ConnectionData);
             MuteSceneListeners();
 
@@ -83,6 +87,7 @@ public class RelayManager : MonoBehaviour
 
             NetworkManager.Singleton.OnClientConnectedCallback -= OnClientJoin;
             NetworkManager.Singleton.OnClientConnectedCallback += OnClientJoin;
+            // Let Netcode scene management transition everyone together.
             NetworkManager.Singleton.SceneManager.LoadScene(gameSceneName, LoadSceneMode.Single);
         }
         finally
@@ -123,6 +128,7 @@ public class RelayManager : MonoBehaviour
             isBusy = true;
             await InitServices();
             JoinAllocation allocation = await RelayService.Instance.JoinAllocationAsync(cleanedCode);
+            // Client uses host connection payload received from relay join allocation.
             transport.SetRelayServerData(allocation.RelayServer.IpV4, (ushort)allocation.RelayServer.Port, allocation.AllocationIdBytes, allocation.Key, allocation.ConnectionData, allocation.HostConnectionData);
             MuteSceneListeners();
 
@@ -137,6 +143,7 @@ public class RelayManager : MonoBehaviour
         }
     }
 
+    // Starts ownership enforcement for a newly connected client.
     void OnClientJoin(ulong clientId)
     {
         if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer)
@@ -147,11 +154,13 @@ public class RelayManager : MonoBehaviour
         StartCoroutine(EnsureOwner(clientId));
     }
 
+    // Waits until the player object exists and fixes ownership if needed.
     IEnumerator EnsureOwner(ulong clientId)
     {
         const int maxFrames = 120;
         int frameCount = 0;
 
+        // Wait briefly for PlayerObject spawn before forcing ownership correction.
         while (frameCount++ < maxFrames)
         {
             if (NetworkManager.Singleton == null)
@@ -178,6 +187,7 @@ public class RelayManager : MonoBehaviour
         }
     }
 
+    // Disables scene-local audio listeners before network scene changes.
     void MuteSceneListeners()
     {
         Scene currentScene = gameObject.scene;

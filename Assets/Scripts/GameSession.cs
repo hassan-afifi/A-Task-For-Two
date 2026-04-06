@@ -16,26 +16,31 @@ public class GameSession : MonoBehaviour
         { PrefKey.CharIndex, "session_char_index" }
     };
 
+    // Resolves a pref key enum to the stored pref key name.
     private static string Pref(PrefKey key)
     {
         return PrefNames[key];
     }
 
+    // Writes a string value to PlayerPrefs for the key.
     private static void PrefSetString(PrefKey key, string value)
     {
         PlayerPrefs.SetString(Pref(key), value);
     }
 
+    // Reads a string value from PlayerPrefs for the key.
     private static string PrefGetString(PrefKey key, string defaultValue)
     {
         return PlayerPrefs.GetString(Pref(key), defaultValue);
     }
 
+    // Writes an int value to PlayerPrefs for the key.
     private static void PrefSetInt(PrefKey key, int value)
     {
         PlayerPrefs.SetInt(Pref(key), value);
     }
 
+    // Reads an int value from PlayerPrefs for the key.
     private static int PrefGetInt(PrefKey key, int defaultValue = 0)
     {
         return PlayerPrefs.GetInt(Pref(key), defaultValue);
@@ -67,6 +72,7 @@ public class GameSession : MonoBehaviour
         PrefSetInt(PrefKey.CharIndex, CharIndex);
     }
 
+    // Initializes or deduplicates the persistent session singleton.
     void Awake()
     {
         if (Instance == null)
@@ -93,6 +99,7 @@ public class GameSession : MonoBehaviour
         }
     }
 
+    // Loads saved player name and character selection from prefs.
     void LoadSaved()
     {
         PlayerName = PrefGetString(PrefKey.PlayerName, string.Empty);

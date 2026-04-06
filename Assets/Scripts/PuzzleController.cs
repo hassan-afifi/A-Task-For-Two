@@ -105,15 +105,19 @@ public class PuzzleController : NetworkBehaviour
     private int target1;
     private int target2;
     private bool solved;
-    private float correctHeldTime;
-    private Vector3 barsClosedLocalPosition;
+    private float holdTime;
+    private Vector3 barsClosedPos;
     private Coroutine barsRoutine;
+
+    // Validates setup and caches closed bars position.
     void Awake()
     {
         EnsureSetup();
-        barsClosedLocalPosition = bars.localPosition;
+        holdTime = 0f;
+        barsClosedPos = bars.localPosition;
     }
 
+    // Generates an offline puzzle when not network-spawned.
     void Start()
     {
         if (IsSpawned)
@@ -148,6 +152,7 @@ public class PuzzleController : NetworkBehaviour
         base.OnNetworkDespawn();
     }
 
+    // Advances solve hold timing and commits solved state when ready.
     void Update()
     {
         if (!IsSpawned)
@@ -161,20 +166,13 @@ public class PuzzleController : NetworkBehaviour
             return;
         }
 
-        if (!IsCurrentAnswerCorrect())
-        {
-            correctHeldTime = 0f;
-            return;
-        }
-
-        correctHeldTime += Time.deltaTime;
-
-        if (correctHeldTime < SolveHoldDuration)
+        if (!HoldOk(Time.deltaTime))
         {
             return;
         }
 
-        correctHeldTime = 0f;
+        // Commit solved only after both dice stayed correct for the hold duration.
+        ResetHold();
         die1.SetLocked(true);
         die2.SetLocked(true);
         NetworkPuzzleState state = netState.Value;
@@ -200,10 +198,11 @@ public class PuzzleController : NetworkBehaviour
         RequestRegenerateServerRpc();
     }
 
+    // Creates and applies a new offline puzzle state.
     void GeneratePuzzleLocal()
     {
         solved = false;
-        correctHeldTime = 0f;
+        ResetHold();
         die1.SetLocked(false);
         die2.SetLocked(false);
         ResetBars();
@@ -215,8 +214,10 @@ public class PuzzleController : NetworkBehaviour
         target2 = equation1.missing;
     }
 
+    // Creates and publishes a new authoritative network puzzle state.
     void GeneratePuzzleServer()
     {
+        // Each side receives its own equation and solves for the other side's missing value.
         PuzzleEquation equation1 = CreateEquation();
         PuzzleEquation equation2 = CreateEquation();
         NetworkPuzzleState state = netState.Value;
@@ -227,12 +228,13 @@ public class PuzzleController : NetworkBehaviour
         state.solved = false;
         state.version = state.version + 1;
         netState.Value = state;
-        correctHeldTime = 0f;
+        ResetHold();
         die1.SetLocked(false);
         die2.SetLocked(false);
         ApplyPuzzleFromNetwork(state);
     }
 
+    // Applies display/target/solve state from a network payload.
     void ApplyPuzzleFromNetwork(NetworkPuzzleState state)
     {
         ApplyDisplay(display1, state.equation1);
@@ -242,6 +244,7 @@ public class PuzzleController : NetworkBehaviour
         ApplySolvedState(state.solved);
     }
 
+    // Checks offline solve state using the hold timer.
     void CheckSolvedOffline()
     {
         if (solved)
@@ -249,35 +252,29 @@ public class PuzzleController : NetworkBehaviour
             return;
         }
 
-        if (!IsCurrentAnswerCorrect())
-        {
-            correctHeldTime = 0f;
-            return;
-        }
-
-        correctHeldTime += Time.deltaTime;
-
-        if (correctHeldTime < SolveHoldDuration)
+        if (!HoldOk(Time.deltaTime))
         {
             return;
         }
 
-        correctHeldTime = 0f;
+        ResetHold();
         solved = true;
         die1.SetLocked(true);
         die2.SetLocked(true);
         StartRaiseBars();
     }
 
+    // Applies incoming network state changes.
     void OnNetworkStateChanged(NetworkPuzzleState _, NetworkPuzzleState currentValue)
     {
         ApplyPuzzleFromNetwork(currentValue);
     }
 
+    // Applies solved/unsolved behavior and bar movement state.
     void ApplySolvedState(bool isSolved)
     {
         solved = isSolved;
-        correctHeldTime = 0f;
+        ResetHold();
 
         if (solved)
         {
@@ -288,6 +285,7 @@ public class PuzzleController : NetworkBehaviour
         ResetBars();
     }
 
+    // Starts raising bars once if not already running.
     void StartRaiseBars()
     {
         if (barsRoutine != null)
@@ -298,6 +296,7 @@ public class PuzzleController : NetworkBehaviour
         barsRoutine = StartCoroutine(RaiseBars());
     }
 
+    // Stops active bar animation and snaps to closed position.
     void ResetBars()
     {
         if (barsRoutine != null)
@@ -306,21 +305,24 @@ public class PuzzleController : NetworkBehaviour
             barsRoutine = null;
         }
 
-        bars.localPosition = barsClosedLocalPosition;
+        bars.localPosition = barsClosedPos;
     }
 
+    // Handles regenerate requests from clients on the server.
     [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
     void RequestRegenerateServerRpc()
     {
         GeneratePuzzleServer();
     }
 
+    // Plays bars-raise sound from bars world position.
     void PlayBarsRaiseSfx()
     {
         barsAudioSource.transform.position = bars.position;
         barsAudioSource.PlayOneShot(barsRaiseClip, 1f);
     }
 
+    // Generates one puzzle equation with random values.
     PuzzleEquation CreateEquation()
     {
         PuzzleEquation equation = new PuzzleEquation
@@ -334,6 +336,7 @@ public class PuzzleController : NetworkBehaviour
         return equation;
     }
 
+    // Applies one equation to its visual display slots.
     void ApplyDisplay(PuzzleDisplay display, PuzzleEquation equation)
     {
         display.sumText.text = equation.sum.ToString(CultureInfo.InvariantCulture);
@@ -341,6 +344,7 @@ public class PuzzleController : NetworkBehaviour
         SetSymbol(display.secondKnownSymbols, equation.secondKnown);
     }
 
+    // Enables exactly one symbol child by index.
     void SetSymbol(Transform symbolsRoot, int symbolIndex)
     {
         for (int i = 0; i < symbolsRoot.childCount; i++)
@@ -349,17 +353,19 @@ public class PuzzleController : NetworkBehaviour
         }
     }
 
+    // Animates bars from closed to raised position.
     IEnumerator RaiseBars()
     {
         PlayBarsRaiseSfx();
         Vector3 start = bars.localPosition;
-        Vector3 target = barsClosedLocalPosition + Vector3.up * BarsRaiseDistance;
+        Vector3 target = barsClosedPos + Vector3.up * BarsRaiseDistance;
         float elapsed = 0f;
 
         while (elapsed < BarsRaiseDuration)
         {
             elapsed += Time.deltaTime;
             float alpha = Mathf.Clamp01(elapsed / BarsRaiseDuration);
+            // Smoothstep easing keeps bars start/end motion less abrupt.
             float eased = alpha * alpha * (3f - 2f * alpha);
             bars.localPosition = Vector3.LerpUnclamped(start, target, eased);
             yield return null;
@@ -369,11 +375,33 @@ public class PuzzleController : NetworkBehaviour
         barsRoutine = null;
     }
 
-    bool IsCurrentAnswerCorrect()
+    // Returns whether both dice match targets and are not rolling.
+    bool IsCorrect()
     {
-        return die1.CurrentFace == target1 && die2.CurrentFace == target2;
+        return !die1.IsRolling && !die2.IsRolling && die1.CurrentFace == target1 && die2.CurrentFace == target2;
     }
 
+    // Advances hold timer only while current answer remains correct.
+    bool HoldOk(float deltaTime)
+    {
+        if (!IsCorrect())
+        {
+            // Any wrong or still-rolling state resets the hold timer immediately.
+            ResetHold();
+            return false;
+        }
+
+        holdTime += Mathf.Max(0f, deltaTime);
+        return holdTime >= SolveHoldDuration;
+    }
+
+    // Resets solve hold timer state.
+    void ResetHold()
+    {
+        holdTime = 0f;
+    }
+
+    // Validates required puzzle references.
     void EnsureSetup()
     {
         EnsureDisplay(display1, nameof(display1));
@@ -405,6 +433,7 @@ public class PuzzleController : NetworkBehaviour
         }
     }
 
+    // Validates one puzzle display reference block.
     void EnsureDisplay(PuzzleDisplay display, string displayName)
     {
         if (display.sumText == null)

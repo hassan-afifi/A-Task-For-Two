@@ -23,6 +23,8 @@ public class CharacterAnimation : MonoBehaviour
 
     private Animator animator;
     private PlayerMovement player;
+
+    // Caches required animator and movement references.
     void Awake()
     {
         animator = GetComponent<Animator>();
@@ -34,6 +36,7 @@ public class CharacterAnimation : MonoBehaviour
         }
     }
 
+    // Pushes movement values into animator parameters each frame.
     void Update()
     {
         if (!player.IsOwner)
@@ -51,25 +54,28 @@ public class CharacterAnimation : MonoBehaviour
         }
     }
 
+    // Maps float parameter keys to animator parameter names.
     static string FloatName(FloatParam param)
     {
         switch (param)
         {
         case FloatParam.Vertical: return "Vertical";
         case FloatParam.Horizontal: return "Horizontal";
-        default: throw new ArgumentOutOfRangeException(nameof(param), param, null);
+            default: throw new ArgumentOutOfRangeException(nameof(param), param, null);
         }
     }
 
+    // Maps bool parameter keys to animator parameter names.
     static string BoolName(BoolParam param)
     {
         switch (param)
         {
         case BoolParam.Crouching: return "Crouching";
-        default: throw new ArgumentOutOfRangeException(nameof(param), param, null);
+            default: throw new ArgumentOutOfRangeException(nameof(param), param, null);
         }
     }
 
+    // Maps trigger parameter keys to animator parameter names.
     static string TriggerName(TriggerParam trigger)
     {
         switch (trigger)

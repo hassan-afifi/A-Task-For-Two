@@ -28,6 +28,8 @@ public class PlayerInputHandler : NetworkBehaviour
 
     // Returns whether sprint input is currently held.
     public bool SprintHeld => sprintHeld;
+
+    // Creates the input action map instance.
     void Awake()
     {
         input = new InputActions();
@@ -61,6 +63,7 @@ public class PlayerInputHandler : NetworkBehaviour
         base.OnNetworkDespawn();
     }
 
+    // Subscribes to action callbacks when enabled.
     void OnEnable()
     {
         EnsureInput();
@@ -72,6 +75,7 @@ public class PlayerInputHandler : NetworkBehaviour
         SetInput(false);
     }
 
+    // Unsubscribes action callbacks and disables input.
     void OnDisable()
     {
         EnsureInput();
@@ -96,6 +100,7 @@ public class PlayerInputHandler : NetworkBehaviour
         base.OnDestroy();
     }
 
+    // Reads owner input each frame when input is active.
     void Update()
     {
         if (!IsOwner || !IsSpawned)
@@ -146,6 +151,7 @@ public class PlayerInputHandler : NetworkBehaviour
         return value;
     }
 
+    // Toggles input in response to pause state changes.
     void OnPause(bool isPaused)
     {
         if (!IsOwner)
@@ -156,6 +162,7 @@ public class PlayerInputHandler : NetworkBehaviour
         SetInput(!isPaused && !ConnectionLost.IsShown);
     }
 
+    // Enables or disables gameplay input collection.
     void SetInput(bool enabled)
     {
         EnsureInput();
@@ -177,6 +184,7 @@ public class PlayerInputHandler : NetworkBehaviour
         ClearState();
     }
 
+    // Validates that input actions were initialized.
     void EnsureInput()
     {
         if (input == null)
@@ -185,6 +193,7 @@ public class PlayerInputHandler : NetworkBehaviour
         }
     }
 
+    // Clears cached input values when input is turned off.
     void ClearState()
     {
         moveInput = Vector2.zero;
@@ -195,6 +204,7 @@ public class PlayerInputHandler : NetworkBehaviour
         crouchPressed = false;
     }
 
+    // Captures jump input when gameplay input is active.
     void OnJump(InputAction.CallbackContext _)
     {
         if (!inputOn || PauseMenu.isOpen || ConnectionLost.IsShown)
@@ -205,6 +215,7 @@ public class PlayerInputHandler : NetworkBehaviour
         jumpPressed = true;
     }
 
+    // Captures interact input when gameplay input is active.
     void OnInteract(InputAction.CallbackContext _)
     {
         if (!inputOn || PauseMenu.isOpen || ConnectionLost.IsShown)
@@ -215,6 +226,7 @@ public class PlayerInputHandler : NetworkBehaviour
         interactPressed = true;
     }
 
+    // Captures sprint held state when gameplay input is active.
     void OnSprint(InputAction.CallbackContext _)
     {
         if (!inputOn || PauseMenu.isOpen || ConnectionLost.IsShown)
@@ -225,11 +237,13 @@ public class PlayerInputHandler : NetworkBehaviour
         sprintHeld = true;
     }
 
+    // Clears sprint held state on sprint cancel.
     void OnSprintOff(InputAction.CallbackContext _)
     {
         sprintHeld = false;
     }
 
+    // Captures crouch input when gameplay input is active.
     void OnCrouch(InputAction.CallbackContext _)
     {
         if (!inputOn || PauseMenu.isOpen || ConnectionLost.IsShown)

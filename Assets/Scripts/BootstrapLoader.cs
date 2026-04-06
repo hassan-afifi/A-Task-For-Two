@@ -5,6 +5,8 @@ using UnityEngine.SceneManagement;
 public class BootstrapLoader : MonoBehaviour
 {
     private const string InitialSceneName = "MainMenu";
+
+    // Loads the initial scene when the bootstrap scene starts.
     void Start()
     {
         Scene activeScene = SceneManager.GetActiveScene();

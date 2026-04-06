@@ -68,6 +68,8 @@ public class PlayerMovement : NetworkBehaviour
 
     // Returns whether the character controller is grounded.
     public bool IsGrounded => controller.isGrounded;
+
+    // Resolves required movement components and camera reference.
     void Awake()
     {
         controller = GetComponent<CharacterController>();
@@ -93,6 +95,7 @@ public class PlayerMovement : NetworkBehaviour
         if (IsOwner)
         {
             playerCamera.enabled = true;
+            // Restore local camera settings from saved options on owner only.
             playerCamera.fieldOfView = OptionsMenu.SavedFov(playerCamera.fieldOfView);
             float sensPercent = OptionsMenu.SavedSensPct(mouseSensitivity * 100f);
             mouseSensitivity = OptionsMenu.SensMap(sensPercent);
@@ -115,6 +118,7 @@ public class PlayerMovement : NetworkBehaviour
 
         if (IsServer || IsOwner)
         {
+            // Guard spawn placement to the authority side(s) only.
             Vector3 spawnPos = GetSpawn();
             StartCoroutine(SetSpawn(spawnPos));
         }
@@ -133,6 +137,7 @@ public class PlayerMovement : NetworkBehaviour
         base.OnNetworkDespawn();
     }
 
+    // Runs local movement, look, jump, and crouch updates.
     void Update()
     {
         if (!IsSpawned || !IsOwner)
@@ -158,6 +163,7 @@ public class PlayerMovement : NetworkBehaviour
         HandleCrouch();
     }
 
+    // Applies mouse look to player body and camera pitch.
     void HandleLook()
     {
         if (!inputHandler.InputOn || PauseMenu.isOpen)
@@ -173,6 +179,7 @@ public class PlayerMovement : NetworkBehaviour
         playerCamera.transform.localRotation = Quaternion.Euler(cameraPitch, 0f, 0f);
     }
 
+    // Applies horizontal movement and vertical gravity velocity.
     void HandleMovement()
     {
         Vector2 input = Vector2.ClampMagnitude(moveInput, 1f);
@@ -195,6 +202,7 @@ public class PlayerMovement : NetworkBehaviour
         }
         else
         {
+            // Apply stronger gravity for snappier jumps/falls.
             verticalVelocity += gravity * gravityMultiplier * Time.deltaTime;
         }
 
@@ -203,6 +211,7 @@ public class PlayerMovement : NetworkBehaviour
         controller.Move(finalMove * Time.deltaTime);
     }
 
+    // Handles jump activation and cooldown checks.
     void HandleJump()
     {
         JumpTriggered = false;
@@ -223,6 +232,7 @@ public class PlayerMovement : NetworkBehaviour
         }
     }
 
+    // Handles crouch toggling and capsule/camera resizing.
     void HandleCrouch()
     {
         bool crouchPressed = inputHandler.ConsumeCrouch();
@@ -240,14 +250,17 @@ public class PlayerMovement : NetworkBehaviour
         playerCamera.transform.localPosition = new Vector3(0f, controller.height - 0.3f, 0f);
     }
 
+    // Teleports to spawn safely by temporarily disabling the controller.
     IEnumerator SetSpawn(Vector3 spawnPos)
     {
+        // CharacterController must be disabled before teleporting position safely.
         controller.enabled = false;
         transform.SetPositionAndRotation(spawnPos, transform.rotation);
         yield return null;
         controller.enabled = true;
     }
 
+    // Returns spawn position based on local ownership role.
     Vector3 GetSpawn()
     {
         return OwnerClientId == NetworkManager.ServerClientId ? new Vector3(6f, 0f, 0f) : new Vector3(-6f, 0f, 0f);

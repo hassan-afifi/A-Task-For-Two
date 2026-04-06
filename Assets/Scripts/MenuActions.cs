@@ -29,6 +29,7 @@ public static class MenuActions
 #endif
     }
 
+    // Shuts down Netcode when a session is currently active.
     static void StopNet()
     {
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
@@ -37,6 +38,7 @@ public static class MenuActions
         }
     }
 
+    // Maps scene keys to concrete scene names.
     static string SceneName(SceneRef scene)
     {
         switch (scene)

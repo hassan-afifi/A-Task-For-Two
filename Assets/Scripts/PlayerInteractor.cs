@@ -9,12 +9,15 @@ public class PlayerInteractor : MonoBehaviour
     private const float InteractDistance = 2.8f;
     private PlayerInputHandler inputHandler;
     private PlayerMovement movement;
+
+    // Caches local input and movement references.
     void Awake()
     {
         inputHandler = GetComponent<PlayerInputHandler>();
         movement = GetComponent<PlayerMovement>();
     }
 
+    // Raycasts from the camera center and rolls a hit die.
     void Update()
     {
         if (!movement.IsOwner || !movement.IsSpawned)

@@ -51,6 +51,11 @@ public class DieClickAnimate : NetworkBehaviour
 
     // Returns whether rolling is currently locked.
     public bool Locked => locked;
+
+    // Returns whether a roll animation or queued roll is currently active.
+    public bool IsRolling => rollRoutine != null || pendingFaces.Count > 0;
+
+    // Captures defaults and applies the initial face orientation.
     void Awake()
     {
         rollAudioSource ??= GetComponent<AudioSource>();
@@ -112,6 +117,7 @@ public class DieClickAnimate : NetworkBehaviour
         SetLockedServerRpc(isLocked);
     }
 
+    // Validates required die animation references.
     void EnsureSetup()
     {
         if (dieVisual == null)
@@ -130,10 +136,12 @@ public class DieClickAnimate : NetworkBehaviour
         }
     }
 
+    // Processes queued roll steps one-by-one with position and rotation animation.
     IEnumerator ProcessQueue()
     {
         Vector3 backPosition = baseLocalPosition - new Vector3(0.2f, 0f, 0f);
 
+        // Each queued roll runs as: back -> rotate -> forward.
         while (pendingFaces.Count > 0)
         {
             PlayRollSfx();
@@ -148,6 +156,7 @@ public class DieClickAnimate : NetworkBehaviour
         rollRoutine = null;
     }
 
+    // Moves the die visual to a target local position over time.
     IEnumerator MoveLocalPosition(Vector3 target, float duration)
     {
         Vector3 from = dieVisual.localPosition;
@@ -157,6 +166,7 @@ public class DieClickAnimate : NetworkBehaviour
         {
             t += Time.deltaTime;
             float alpha = Mathf.Clamp01(t / duration);
+            // Smoothstep easing gives softer start/stop than linear lerp.
             float eased = alpha * alpha * (3f - 2f * alpha);
             dieVisual.localPosition = Vector3.LerpUnclamped(from, target, eased);
             yield return null;
@@ -165,6 +175,7 @@ public class DieClickAnimate : NetworkBehaviour
         dieVisual.localPosition = target;
     }
 
+    // Rotates the die visual to a target local rotation over time.
     IEnumerator RotateLocalTo(Quaternion target, float duration)
     {
         Quaternion from = dieVisual.localRotation;
@@ -174,6 +185,7 @@ public class DieClickAnimate : NetworkBehaviour
         {
             t += Time.deltaTime;
             float alpha = Mathf.Clamp01(t / duration);
+            // Match position easing so motion timing feels consistent.
             float eased = alpha * alpha * (3f - 2f * alpha);
             dieVisual.localRotation = Quaternion.SlerpUnclamped(from, target, eased);
             yield return null;
@@ -182,11 +194,13 @@ public class DieClickAnimate : NetworkBehaviour
         dieVisual.localRotation = target;
     }
 
+    // Returns the local rotation for a face index.
     Quaternion FaceRotation(int faceIndex)
     {
         return Quaternion.Euler(Faces[faceIndex].euler);
     }
 
+    // Enqueues a new target face and starts queue processing if idle.
     void QueueFace(int nextFace)
     {
         if (nextFace < 0 || nextFace >= Faces.Length)
@@ -202,6 +216,7 @@ public class DieClickAnimate : NetworkBehaviour
         }
     }
 
+    // Applies lock state and clears pending rolls when locked.
     void ApplyLocked(bool isLocked)
     {
         locked = isLocked;
@@ -214,11 +229,13 @@ public class DieClickAnimate : NetworkBehaviour
         pendingFaces.Clear();
     }
 
+    // Applies replicated lock state changes.
     void OnLockedChanged(bool _, bool currentValue)
     {
         ApplyLocked(currentValue);
     }
 
+    // Synchronizes local state from current network variables.
     void SyncFromNetworkState()
     {
         ApplyLocked(netLocked.Value);
@@ -235,6 +252,7 @@ public class DieClickAnimate : NetworkBehaviour
         dieVisual.localRotation = FaceRotation(currentFace);
     }
 
+    // Handles roll requests on the server and broadcasts the next face.
     [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
     void RequestRollServerRpc()
     {
@@ -243,23 +261,27 @@ public class DieClickAnimate : NetworkBehaviour
             return;
         }
 
+        // Server computes next face to keep progression authoritative.
         int nextFace = Faces[netFace.Value].nextFace;
         netFace.Value = nextFace;
         RollClientRpc(nextFace);
     }
 
+    // Queues the received face roll on each client.
     [ClientRpc]
     void RollClientRpc(int nextFace)
     {
         QueueFace(nextFace);
     }
 
+    // Handles lock state requests on the server.
     [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
     void SetLockedServerRpc(bool isLocked)
     {
         netLocked.Value = isLocked;
     }
 
+    // Plays the die roll sound effect.
     void PlayRollSfx()
     {
         rollAudioSource.PlayOneShot(rollClip, 1f);

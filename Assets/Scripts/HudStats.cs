@@ -27,12 +27,15 @@ public class HudStats : MonoBehaviour
     private bool lastClockOn;
     private const float StatWidth = 100f;
     private const float StatHeight = 50f;
+
+    // Validates references and applies initial widget layout.
     void Awake()
     {
         EnsureSetup();
         Layout();
     }
 
+    // Updates widget values and layout state each frame.
     void Update()
     {
         UpdateFps();
@@ -41,6 +44,7 @@ public class HudStats : MonoBehaviour
         LayoutIfNeeded();
     }
 
+    // Updates the FPS label at a fixed refresh interval.
     void UpdateFps()
     {
         frameCount++;
@@ -57,6 +61,7 @@ public class HudStats : MonoBehaviour
         fpsTimer = 0f;
     }
 
+    // Updates the ping label using active transport RTT data.
     void UpdatePing()
     {
         pingTimer += Time.unscaledDeltaTime;
@@ -89,6 +94,7 @@ public class HudStats : MonoBehaviour
         pingText.text = string.Format(PingFormat, rttMs);
     }
 
+    // Updates the clock label once per second.
     void UpdateClock()
     {
         clockTimer += Time.unscaledDeltaTime;
@@ -102,6 +108,7 @@ public class HudStats : MonoBehaviour
         clockText.text = DateTime.Now.ToString(ClockFormat, CultureInfo.InvariantCulture);
     }
 
+    // Places active widgets from left to right on the HUD.
     void Layout()
     {
         int activeIndex = 0;
@@ -114,6 +121,7 @@ public class HudStats : MonoBehaviour
         layoutInit = true;
     }
 
+    // Rebuilds layout only when widget visibility changes.
     void LayoutIfNeeded()
     {
         bool fpsOn = fpsWidget.gameObject.activeSelf;
@@ -126,6 +134,7 @@ public class HudStats : MonoBehaviour
         }
     }
 
+    // Applies anchors, size, and position for one widget.
     void PlaceWidget(RectTransform widget, ref int activeIndex)
     {
         widget.anchorMin = new Vector2(0f, 1f);
@@ -142,6 +151,7 @@ public class HudStats : MonoBehaviour
         activeIndex++;
     }
 
+    // Tries to read a ping value for host or client mode.
     bool TryGetPing(out ulong rttMs)
     {
         rttMs = 0;
@@ -171,6 +181,7 @@ public class HudStats : MonoBehaviour
         return true;
     }
 
+    // Throws when required HUD references are missing.
     void EnsureSetup()
     {
         if (fpsText == null)
