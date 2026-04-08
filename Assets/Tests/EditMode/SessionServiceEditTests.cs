@@ -5,7 +5,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.Audio;
 
-public class CoreEditTests
+public class SessionServiceEditTests
 {
     private const string CameraFovKey = "opt_camera_fov";
     private const string SensitivityKey = "opt_camera_sensitivity_pct";
@@ -72,13 +72,17 @@ public class CoreEditTests
     public void StopGameMusicTest()
     {
         Assert.Throws<InvalidOperationException>(() => OptionsMenu.StopGameMusic());
+        GameObject nullOnlyGo = new GameObject("OptionsMenuStopMusicNullOnlyTest");
+        nullOnlyGo.AddComponent<OptionsMenu>();
+        Assert.Throws<InvalidOperationException>(() => OptionsMenu.StopGameMusic());
         AudioMixer mixer = AssetDatabase.LoadAssetAtPath<AudioMixer>("Assets/Audio/AudioMixer.mixer");
         Assert.That(mixer, Is.Not.Null);
-        GameObject go = new GameObject("OptionsMenuStopMusicTest");
-        OptionsMenu menu = go.AddComponent<OptionsMenu>();
-        SetPrivate(menu, "audioMixer", mixer);
+        GameObject validGo = new GameObject("OptionsMenuStopMusicValidTest");
+        OptionsMenu validMenu = validGo.AddComponent<OptionsMenu>();
+        SetPrivate(validMenu, "audioMixer", mixer);
         Assert.DoesNotThrow(OptionsMenu.StopGameMusic);
-        UnityEngine.Object.DestroyImmediate(go);
+        UnityEngine.Object.DestroyImmediate(validGo);
+        UnityEngine.Object.DestroyImmediate(nullOnlyGo);
     }
 
     [Test]
@@ -121,6 +125,15 @@ public class CoreEditTests
         Assert.That(session.CharIndex, Is.EqualTo(3));
     }
 
+    [Test]
+    public void CreateGameTest()
+    {
+        GameObject go = new GameObject("RelayManagerCreateTest");
+        RelayManager relay = go.AddComponent<RelayManager>();
+        Assert.ThrowsAsync<InvalidOperationException>(async () => await relay.CreateGame());
+        SetPrivate(relay, "isBusy", true);
+        Assert.ThrowsAsync<InvalidOperationException>(async () => await relay.CreateGame());
+    }
     [Test]
     public void JoinGameTest()
     {

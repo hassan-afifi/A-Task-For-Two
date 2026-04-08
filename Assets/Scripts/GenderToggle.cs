@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -108,11 +108,14 @@ public class GenderToggle : MonoBehaviour
     // Synchronizes animator bool/state for current selection.
     void SyncAnim(bool instant)
     {
-        selectorAnimator.SetBool(BoolName(BoolParam.IsMale), isMale);
-
-        if (instant)
+        if (selectorAnimator.runtimeAnimatorController != null)
         {
-            selectorAnimator.Play(isMale ? StateName(AnimState.MaleSelected) : StateName(AnimState.FemaleSelected), 0, 1f);
+            selectorAnimator.SetBool(BoolName(BoolParam.IsMale), isMale);
+
+            if (instant)
+            {
+                selectorAnimator.Play(isMale ? StateName(AnimState.MaleSelected) : StateName(AnimState.FemaleSelected), 0, 1f);
+            }
         }
     }
 

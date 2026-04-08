@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // Stores session data that persists between scenes.
+[DefaultExecutionOrder(-1000)]
 public class GameSession : MonoBehaviour
 {
     private enum PrefKey

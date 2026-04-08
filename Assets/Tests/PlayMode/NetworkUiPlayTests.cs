@@ -2,13 +2,14 @@ using System;
 using System.Collections;
 using System.Reflection;
 using NUnit.Framework;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using UnityEngine.UI;
 
-public class NetworkEndPlayTests
+public class NetworkUiPlayTests
 {
     [SetUp]
     public void SetUp()
@@ -18,6 +19,7 @@ public class NetworkEndPlayTests
         DestroyAll<MenuSfx>();
         DestroyAll<AudioManager>();
         DestroyAll<GameSession>();
+        CleanupNetworkManagers();
         EnsureEventSystem();
     }
 
@@ -29,6 +31,7 @@ public class NetworkEndPlayTests
         DestroyAll<MenuSfx>();
         DestroyAll<AudioManager>();
         DestroyAll<GameSession>();
+        CleanupNetworkManagers();
         DestroyAll<EventSystem>();
     }
 
@@ -65,6 +68,24 @@ public class NetworkEndPlayTests
         Assert.DoesNotThrow(() => sliderSfx.OnPointerEnter(null));
     }
 
+    [Test]
+    public void OnPointerDownTest()
+    {
+        GameObject sliderGo = new GameObject("MenuSfxPointerDownSliderTest", typeof(RectTransform), typeof(Slider), typeof(MenuSfx));
+        MenuSfx sliderSfx = sliderGo.GetComponent<MenuSfx>();
+        PointerEventData leftClick = new PointerEventData(EventSystem.current) { button = PointerEventData.InputButton.Left };
+        Assert.DoesNotThrow(() => sliderSfx.OnPointerDown(leftClick));
+        MenuSfx sfx = BuildMenuSfxOnButton();
+        PointerEventData rightClick = new PointerEventData(EventSystem.current) { button = PointerEventData.InputButton.Right };
+        sfx.GetComponent<Button>().interactable = false;
+        Assert.DoesNotThrow(() => sfx.OnPointerDown(leftClick));
+        sfx.GetComponent<Button>().interactable = true;
+        Assert.DoesNotThrow(() => sfx.OnPointerDown(rightClick));
+        Assert.Throws<InvalidOperationException>(() => sfx.OnPointerDown(leftClick));
+        AudioManager manager = BuildAudioManager("AudioManagerPointerDownTest");
+        Assert.DoesNotThrow(() => sfx.OnPointerDown(leftClick));
+        UnityEngine.Object.DestroyImmediate(manager.gameObject);
+    }
     [Test]
     public void OnSelectTest()
     {
@@ -127,19 +148,6 @@ public class NetworkEndPlayTests
         yield return null;
         Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo("MainMenu"));
     }
-
-    [UnityTest]
-    public IEnumerator EndScreenReturnToMainMenuTest()
-    {
-        EnsureGameSession();
-        GameObject go = new GameObject("EndScreenReturnTest");
-        go.SetActive(false);
-        EndScreen endScreen = go.AddComponent<EndScreen>();
-        endScreen.ReturnToMainMenu();
-        yield return null;
-        Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo("MainMenu"));
-    }
-
     private static MenuSfx BuildMenuSfxOnButton()
     {
         GameObject go = new GameObject("MenuSfxButtonTest", typeof(RectTransform), typeof(Image), typeof(Button));
@@ -225,6 +233,22 @@ public class NetworkEndPlayTests
         }
 
         return null;
+    }
+
+    private static void CleanupNetworkManagers()
+    {
+        NetworkManager[] managers = UnityEngine.Object.FindObjectsByType<NetworkManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+
+        for (int i = 0; i < managers.Length; i++)
+        {
+            if (managers[i] == null)
+            {
+                continue;
+            }
+
+            managers[i].Shutdown();
+            UnityEngine.Object.DestroyImmediate(managers[i].gameObject);
+        }
     }
 
     private static void EnsureGameSession()

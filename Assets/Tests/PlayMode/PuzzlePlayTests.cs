@@ -1,19 +1,31 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Reflection;
 using NUnit.Framework;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 
 public class PuzzlePlayTests
 {
+    [SetUp]
+    public void SetUp()
+    {
+        Time.timeScale = 1f;
+        CleanupNetworkManagers();
+    }
+
     [TearDown]
     public void TearDown()
     {
+        Time.timeScale = 1f;
         DestroyAll<PuzzleController>();
         DestroyAll<DieClickAnimate>();
+        DestroyAll<EndScreen>();
+        DestroyAll<GameSession>();
+        CleanupNetworkManagers();
     }
 
     [UnityTest]
@@ -22,11 +34,11 @@ public class PuzzlePlayTests
         DieClickAnimate die = BuildDie("DieRollTest");
         die.RollDie();
         Assert.That(die.IsRolling, Is.True);
-        yield return new WaitForSeconds(1.0f);
+        yield return WaitForRollToFinish(die, 2f);
         Assert.That(die.CurrentFace, Is.EqualTo(1));
         Assert.That(die.IsRolling, Is.False);
         die.RollDie();
-        yield return new WaitForSeconds(1.0f);
+        yield return WaitForRollToFinish(die, 2f);
         Assert.That(die.CurrentFace, Is.EqualTo(2));
     }
 
@@ -41,8 +53,29 @@ public class PuzzlePlayTests
         Assert.That(die.IsRolling, Is.False);
         die.SetLocked(false);
         die.RollDie();
-        yield return new WaitForSeconds(1.0f);
+        yield return WaitForRollToFinish(die, 2f);
         Assert.That(die.CurrentFace, Is.EqualTo(1));
+    }
+
+    [UnityTest]
+    public IEnumerator ReturnToMainMenuTest()
+    {
+        EnsureGameSession();
+        GameObject go = new GameObject("EndScreenReturnTest");
+        go.SetActive(false);
+        EndScreen endScreen = go.AddComponent<EndScreen>();
+        endScreen.ReturnToMainMenu();
+        yield return null;
+        Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo("MainMenu"));
+    }
+
+    [Test]
+    public void OnDestroyTest()
+    {
+        GameObject go = new GameObject("EndScreenOnDestroyTest");
+        go.SetActive(false);
+        EndScreen endScreen = go.AddComponent<EndScreen>();
+        Assert.DoesNotThrow(() => endScreen.OnDestroy());
     }
 
     [Test]
@@ -150,6 +183,18 @@ public class PuzzlePlayTests
         SetNestedField(stateType, stateB, "solved", true);
         bool differentState = (bool)stateEqMethod.Invoke(stateA, new[] { stateB });
         Assert.That(differentState, Is.False);
+    }
+
+    private static IEnumerator WaitForRollToFinish(DieClickAnimate die, float timeoutSeconds)
+    {
+        float deadline = Time.realtimeSinceStartup + timeoutSeconds;
+
+        while (die.IsRolling && Time.realtimeSinceStartup < deadline)
+        {
+            yield return null;
+        }
+
+        Assert.That(die.IsRolling, Is.False);
     }
 
     private static DieClickAnimate BuildDie(string name)
@@ -262,6 +307,32 @@ public class PuzzlePlayTests
         FieldInfo field = type.GetField(fieldName, BindingFlags.Instance | BindingFlags.Public);
         Assert.That(field, Is.Not.Null);
         field.SetValue(target, value);
+    }
+
+    private static void CleanupNetworkManagers()
+    {
+        NetworkManager[] managers = UnityEngine.Object.FindObjectsByType<NetworkManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+
+        for (int i = 0; i < managers.Length; i++)
+        {
+            if (managers[i] == null)
+            {
+                continue;
+            }
+
+            managers[i].Shutdown();
+            UnityEngine.Object.DestroyImmediate(managers[i].gameObject);
+        }
+    }
+
+    private static void EnsureGameSession()
+    {
+        if (GameSession.Instance != null)
+        {
+            return;
+        }
+
+        new GameObject("GameSessionTest", typeof(GameSession));
     }
 
     private static void DestroyAll<T>() where T : UnityEngine.Object

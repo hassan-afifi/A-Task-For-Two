@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.InputSystem;
@@ -172,9 +172,13 @@ public class PauseMenu : MonoBehaviour
         }
 
         GUIUtility.systemCopyBuffer = GameSession.Instance.JoinCode;
-        string copiedTrigger = Trigger(TriggerName.Copied);
-        codeCopiedAnimator.ResetTrigger(copiedTrigger);
-        codeCopiedAnimator.SetTrigger(copiedTrigger);
+
+        if (codeCopiedAnimator.runtimeAnimatorController != null)
+        {
+            string copiedTrigger = Trigger(TriggerName.Copied);
+            codeCopiedAnimator.ResetTrigger(copiedTrigger);
+            codeCopiedAnimator.SetTrigger(copiedTrigger);
+        }
     }
 
     // Forces all pause UI state back to closed defaults.

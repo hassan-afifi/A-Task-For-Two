@@ -5,7 +5,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class SessionEditTests
+public class InputControlsEditTests
 {
     [TearDown]
     public void TearDown()
@@ -48,15 +48,6 @@ public class SessionEditTests
         Assert.That(input.ConsumeCrouch(), Is.False);
     }
 
-    [Test]
-    public void CreateGameTest()
-    {
-        GameObject go = new GameObject("RelayManagerCreateTest");
-        RelayManager relay = go.AddComponent<RelayManager>();
-        Assert.ThrowsAsync<InvalidOperationException>(async () => await relay.CreateGame());
-        SetField(relay, "isBusy", true);
-        Assert.ThrowsAsync<InvalidOperationException>(async () => await relay.CreateGame());
-    }
 
     [Test]
     public void OnDestroyTest()
@@ -185,7 +176,6 @@ public class SessionEditTests
         Assert.That(slider.value, Is.EqualTo(0f).Within(0.001f));
         Assert.That(decreaseButton.interactable, Is.False);
     }
-
     private static AnimatedToggle BuildAnimatedToggle(out RectTransform selectorRect)
     {
         GameObject root = new GameObject("AnimatedToggleTest", typeof(RectTransform), typeof(Button));
@@ -248,7 +238,6 @@ public class SessionEditTests
         Assert.That(field, Is.Not.Null);
         field.SetValue(target, value);
     }
-
     private static void DestroyAll<T>() where T : UnityEngine.Object
     {
         T[] objects = UnityEngine.Object.FindObjectsByType<T>(FindObjectsInactive.Include, FindObjectsSortMode.None);

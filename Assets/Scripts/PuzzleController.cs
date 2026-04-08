@@ -206,8 +206,7 @@ public class PuzzleController : NetworkBehaviour
         die1.SetLocked(false);
         die2.SetLocked(false);
         ResetBars();
-        PuzzleEquation equation1 = CreateEquation();
-        PuzzleEquation equation2 = CreateEquation();
+        CreateEquationPair(out PuzzleEquation equation1, out PuzzleEquation equation2);
         ApplyDisplay(display1, equation1);
         ApplyDisplay(display2, equation2);
         target1 = equation2.missing;
@@ -218,8 +217,7 @@ public class PuzzleController : NetworkBehaviour
     void GeneratePuzzleServer()
     {
         // Each side receives its own equation and solves for the other side's missing value.
-        PuzzleEquation equation1 = CreateEquation();
-        PuzzleEquation equation2 = CreateEquation();
+        CreateEquationPair(out PuzzleEquation equation1, out PuzzleEquation equation2);
         NetworkPuzzleState state = netState.Value;
         state.equation1 = equation1;
         state.equation2 = equation2;
@@ -334,6 +332,17 @@ public class PuzzleController : NetworkBehaviour
 
         equation.sum = equation.missing + equation.firstKnown + equation.secondKnown;
         return equation;
+    }
+
+    // Generates two equations and avoids the both-missing-zero case.
+    void CreateEquationPair(out PuzzleEquation equation1, out PuzzleEquation equation2)
+    {
+        do
+        {
+            equation1 = CreateEquation();
+            equation2 = CreateEquation();
+        } 
+        while (equation1.missing == 0 && equation2.missing == 0);
     }
 
     // Applies one equation to its visual display slots.

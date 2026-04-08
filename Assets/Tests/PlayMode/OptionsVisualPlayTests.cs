@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
 using NUnit.Framework;
@@ -86,18 +86,6 @@ public class OptionsVisualPlayTests
         Assert.That(crosshair.color, Is.EqualTo(Color.red));
         menu.OnCrosshairColorChanged(999);
         Assert.That(PlayerPrefs.GetInt("opt_crosshair_color", -1), Is.EqualTo(9));
-    }
-
-    [Test]
-    public void OnFovChangedTest()
-    {
-        OptionsMenu menu = BuildOptionsMenu();
-        menu.OnFovChanged(91f);
-        Assert.That(PlayerPrefs.GetFloat("opt_camera_fov", 0f), Is.EqualTo(91f).Within(0.0001f));
-        menu.OnFovChanged(-100f);
-        Assert.That(PlayerPrefs.GetFloat("opt_camera_fov", 0f), Is.EqualTo(60f).Within(0.0001f));
-        menu.OnFovChanged(500f);
-        Assert.That(PlayerPrefs.GetFloat("opt_camera_fov", 0f), Is.EqualTo(100f).Within(0.0001f));
     }
 
     [Test]

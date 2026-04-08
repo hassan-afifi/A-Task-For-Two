@@ -29,12 +29,19 @@ public static class MenuActions
 #endif
     }
 
-    // Shuts down Netcode when a session is currently active.
+    // Shuts down Netcode and removes the current NetworkManager instance.
     static void StopNet()
     {
-        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        NetworkManager manager = NetworkManager.Singleton;
+
+        if (manager != null)
         {
-            NetworkManager.Singleton.Shutdown();
+            if (manager.IsListening)
+            {
+                manager.Shutdown();
+            }
+
+            UnityEngine.Object.Destroy(manager.gameObject);
         }
     }
 

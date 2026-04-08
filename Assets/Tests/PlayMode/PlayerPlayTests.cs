@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using NUnit.Framework;
 using TMPro;
 using Unity.Netcode;
@@ -14,6 +14,7 @@ public class PlayerPlayTests
         DestroyAll<PlayerVisuals>();
         DestroyAll<PlayerAudio>();
         DestroyAll<PlayerInputHandler>();
+        DestroyAll<OptionsMenu>();
     }
 
     [Test]
@@ -101,6 +102,21 @@ public class PlayerPlayTests
         Assert.DoesNotThrow(() => input.OnNetworkDespawn());
         bool inputOn = GetPrivate<bool>(input, "inputOn");
         Assert.That(inputOn, Is.False);
+    }
+
+    [Test]
+    public void OnFovChangedTest()
+    {
+        PlayerPrefs.DeleteKey("opt_camera_fov");
+        GameObject go = new GameObject("OptionsMenuFovTest");
+        go.SetActive(false);
+        OptionsMenu menu = go.AddComponent<OptionsMenu>();
+        menu.OnFovChanged(91f);
+        Assert.That(PlayerPrefs.GetFloat("opt_camera_fov", 0f), Is.EqualTo(91f).Within(0.0001f));
+        menu.OnFovChanged(-100f);
+        Assert.That(PlayerPrefs.GetFloat("opt_camera_fov", 0f), Is.EqualTo(60f).Within(0.0001f));
+        menu.OnFovChanged(500f);
+        Assert.That(PlayerPrefs.GetFloat("opt_camera_fov", 0f), Is.EqualTo(100f).Within(0.0001f));
     }
 
     private static PlayerMovement BuildPlayerMovement()

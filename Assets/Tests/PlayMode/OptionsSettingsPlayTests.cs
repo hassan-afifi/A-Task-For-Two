@@ -6,7 +6,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class OptionsAudioPlayTests
+public class OptionsSettingsPlayTests
 {
     [SetUp]
     public void SetUp()
@@ -59,6 +59,9 @@ public class OptionsAudioPlayTests
     public void StopGameMusicTest()
     {
         Assert.Throws<InvalidOperationException>(() => OptionsMenu.StopGameMusic());
+        OptionsMenu nullOnlyMenu = BuildOptionsMenu();
+        Assert.Throws<InvalidOperationException>(() => OptionsMenu.StopGameMusic());
+        UnityEngine.Object.DestroyImmediate(nullOnlyMenu.gameObject);
     }
 
     [Test]

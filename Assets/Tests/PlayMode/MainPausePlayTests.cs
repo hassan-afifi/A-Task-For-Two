@@ -1,7 +1,8 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Reflection;
 using NUnit.Framework;
 using TMPro;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
@@ -14,6 +15,7 @@ public class MainPausePlayTests
     {
         PauseMenu.isOpen = false;
         PlayerPrefs.DeleteAll();
+        CleanupNetworkManagers();
     }
 
     [TearDown]
@@ -23,6 +25,7 @@ public class MainPausePlayTests
         DestroyAll<MainMenu>();
         DestroyAll<PauseMenu>();
         DestroyAll<GameSession>();
+        CleanupNetworkManagers();
         PlayerPrefs.DeleteAll();
     }
 
@@ -207,6 +210,22 @@ public class MainPausePlayTests
         FieldInfo field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
         Assert.That(field, Is.Not.Null);
         field.SetValue(target, value);
+    }
+
+    private static void CleanupNetworkManagers()
+    {
+        NetworkManager[] managers = UnityEngine.Object.FindObjectsByType<NetworkManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+
+        for (int i = 0; i < managers.Length; i++)
+        {
+            if (managers[i] == null)
+            {
+                continue;
+            }
+
+            managers[i].Shutdown();
+            UnityEngine.Object.DestroyImmediate(managers[i].gameObject);
+        }
     }
 
     private static void EnsureGameSession()
