@@ -1,0 +1,27 @@
+\chapter{Introduction}
+
+\section{Problem Background}
+Online cooperative puzzle games require effective communication between participants interacting within a shared environment. This thesis presents \textit{A Task for Two}, a two-player online cooperative first-person puzzle system in which both users receive partial information and must collaborate to complete the objective. The system was implemented in Unity using Netcode for GameObjects and Relay-based online session management \cite{unity_ngo_networkvariable_docs,unity_ngo_rpc_docs,unity_relay_docs}.
+
+The core gameplay mechanic is a synchronized symbol puzzle. Each participant is presented with a different equation and controls a die that influences the counterpart's missing value. The puzzle is solved only when both users set the correct values and maintain the correct state long enough for the gate bars to open. This mechanism enforces progress through communication rather than random trial-and-error interaction.
+
+\section{Motivation for Topic Choice}
+The topic was chosen because it combines practical game development with core software engineering challenges, including real-time interaction, network synchronization, and reliable user-facing behavior. A cooperative puzzle system provides a well-defined scope for demonstrating requirements analysis, architectural design, implementation, and testing within the constraints of a bachelor thesis.
+
+\section{Thesis Goals}
+The primary goal of the project is to design and implement a robust cooperative system prototype that is technically reliable and maintainable. The software goals are:
+
+\begin{itemize}
+\item Ensure that puzzle logic is deterministic and consistently synchronized across the network.
+\item Provide a stable host--client lifecycle for session creation and joining.
+\item Maintain clear separation of gameplay responsibilities across system components.
+\item Support configurable user options with persistent storage.
+\item Verify system behavior through automated and manual testing.
+\end{itemize}
+
+The educational goal of the thesis is to demonstrate full-cycle software engineering: requirements analysis, architecture and implementation decisions, testing, and evaluation.
+
+\section{Scope and Constraints}
+The scope of the thesis is a complete and stable cooperative gameplay vertical slice. It includes session creation and joining, synchronized puzzle interaction, level completion, and end-screen flow. The implementation also provides in-game menus, persistent user options, runtime error handling, and behavior-focused automated tests.
+
+The objective is engineering quality in a thesis-sized system prototype while prioritizing reliability and maintainability over feature breadth. Therefore, large-scale production features (for example, global matchmaking at scale, anti-cheat systems, or a multi-level content pipeline) are intentionally out of scope. This keeps the work focused on correctness, maintainability, and reproducible behavior in real two-player sessions.

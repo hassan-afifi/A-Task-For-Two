@@ -1,0 +1,27 @@
+\chapter{Conclusion}
+
+\section{Summary of Results}
+This thesis presented the design and implementation of \textit{A Task for Two}, a two-player online cooperative puzzle game prototype developed in Unity. The implemented system delivers a complete gameplay vertical slice: session creation and joining through Relay, synchronized puzzle interaction, level completion logic, and shared end-screen flow.
+
+From an engineering perspective, the project achieved the main technical goals defined in the introduction. Puzzle state is synchronized with server-authoritative updates, player ownership boundaries are enforced for interaction and movement, and menu-to-game lifecycle transitions are handled in a stable way. The codebase is organized into clear modules (session/networking, player, puzzle, UI/options, and end/recovery), which improved maintainability and testability.
+
+User-facing reliability was supported by persistent settings and structured UI flows. Automated verification was implemented with Unity Test Framework in both edit mode and play mode, covering the critical functional paths of session handling, options behavior, player/network interactions, puzzle resolution, and end-state transitions. In addition to automated tests, manual multi-client runs were conducted to validate real-world host/client behavior and full gameplay flow.
+
+Overall, the thesis objective was met: a technically robust and maintainable cooperative game prototype was designed, implemented, and validated within BSc thesis scope constraints.
+
+\section{Possible Extensions}
+The current implementation is intentionally focused on a reliable two-player core experience. Future extensions can be grouped by how much architectural change they require:
+
+\begin{itemize}
+\item \textbf{Additional puzzle variants and multi-level progression (incremental extension):} the current puzzle and scene structure already supports adding new puzzle rules and extra levels without redesigning the core networking model.
+\item \textbf{Account-based profiles (requires architectural redesign):} the current implementation stores identity and settings locally, so cross-session account identity requires backend services and server-side profile management.
+\item \textbf{Achievement systems and unlockable rewards (partial extension):} local achievements can be added incrementally, while account-synced progression requires the same account/backend redesign.
+\item \textbf{Support for more than two players (requires major redesign):} core puzzle state, targeting logic, and session assumptions are currently two-player oriented and must be generalized.
+\item \textbf{Public/private rooms with room search (requires session-layer redesign):} the current join-code flow has no room discovery, so lobby/discovery services and related UI flows must be introduced.
+\item \textbf{Voice chat and text chat (requires subsystem integration):} communication features need dedicated transport/services, UI integration, and moderation-related handling.
+\item \textbf{Stronger security and anti-cheat (partial extension):} server-authoritative validation exists for key puzzle actions, but broader anti-cheat hardening requires expanded server-side validation and abuse-resistant network checks.
+\end{itemize}
+
+These extensions are not required for the thesis objective, but they outline a clear and technically grounded path from a prototype implementation toward a more complete and scalable multiplayer product.
+
+The results demonstrate that the proposed architecture and implementation approach are suitable for small-scale cooperative multiplayer games and provide a solid foundation for further development.

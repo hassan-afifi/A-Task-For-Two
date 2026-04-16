@@ -1,0 +1,147 @@
+\chapter{User Documentation}
+
+\section{Short Problem Statement}
+This application provides a cooperative two-player puzzle experience in which each participant has only partial information. The task can only be completed if both users communicate and set the correct puzzle values together.
+
+\section{Brief Method Overview}
+The system is based on synchronized state sharing between two connected participants. Each participant sees a different puzzle view and controls one die that influences the other participant's missing value. The puzzle is considered solved only when both dice are set to the correct values and remain stable long enough for the bars to open. This design enforces coordinated interaction instead of random rapid input.
+
+\section{System Requirements}
+\subsection*{User Requirements}
+The application requires a Windows-based system capable of running the Unity standalone build. A keyboard and mouse are required for interaction.
+
+\subsection*{Development Requirements (optional)}
+For development and running from source, the following tools are required:
+
+\begin{itemize}
+\item Unity Hub.
+\item Unity Editor \texttt{6000.3.10f1}.
+\item Git.
+\item Git LFS.
+\item Visual Studio Code \texttt{1.111.0}.
+\end{itemize}
+
+Platform note:
+\begin{itemize}
+\item Windows standalone build support is available by default on the Windows Unity installation used for this project.
+\item Additional build targets can be installed from Unity Hub if needed.
+\end{itemize}
+
+\section{Installation and Startup}
+\begin{enumerate}
+\item The application can be obtained by cloning the project repository:
+\begin{verbatim}
+git clone https://github.com/hassan-afifi/A_Task_For_Two.git
+\end{verbatim}
+or
+\begin{verbatim}
+git clone git@github.com:hassan-afifi/A_Task_For_Two.git
+\end{verbatim}
+
+\item Enter the project folder:
+\begin{verbatim}
+cd A_Task_For_Two
+\end{verbatim}
+
+\item Enable and pull Git LFS assets:
+\begin{verbatim}
+git lfs install
+git lfs pull
+\end{verbatim}
+
+\item Open Unity Hub, choose \textbf{Add project from disk}, select the cloned folder, and open it with Unity Editor \texttt{6000.3.10f1}.
+\end{enumerate}
+
+\section{Controls and Interaction}
+The game uses standard first-person controls with keyboard movement and mouse-based camera control. Interaction with objects, such as the puzzle die, is performed using the designated interact key.
+
+\section{Gameplay Flow}
+\begin{enumerate}
+\item Open the main menu and create or join a session.
+\item Move to the puzzle area once both participants are connected.
+\item Read your local puzzle symbols and communicate with the other participant.
+\item Rotate your die to provide the value required by the other participant's puzzle.
+\item Keep both dice on correct values until the bars open.
+\item Move forward to complete the level and trigger the end screen.
+\end{enumerate}
+
+\section{Use Case Diagram}
+
+\section{User Stories}
+The following user stories summarize expected user-facing behavior in Given--When--Then format.
+
+\subsection*{Main Menu and Session Flow}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{0.18\linewidth}|>{\raggedright\arraybackslash}p{0.22\linewidth}|>{\raggedright\arraybackslash}p{0.15\linewidth}|>{\raggedright\arraybackslash}p{0.35\linewidth}|}
+\caption{User Stories: Main Menu and Session Flow}\label{tab:userstories-main-menu}\\
+\hline
+\textbf{I want to} & \textbf{Given} & \textbf{When} & \textbf{Then} \\
+\hline
+Open the options menu & The main menu is visible & I click \textit{Options} & The application displays the options screen \\
+\hline
+Close the options menu & The options screen is visible & I click \textit{Back} or \textit{Close} & The system returns to the main menu panel \\
+\hline
+Create a host session & I entered a valid player name & I click \textit{Create Game} & The system starts host creation and transitions to gameplay \\
+\hline
+Join an existing session & I entered a valid player name and join code & I click \textit{Join Game} & The system starts client connection and joins the host session \\
+\hline
+Avoid invalid session actions & Name or code input is invalid & I stay on the menu screen & The system keeps create/join actions unavailable \\
+\hline
+Exit the application & I am in a menu screen & I click \textit{Exit} & The system closes the application \\
+\hline
+\end{longtable}
+
+\subsection*{Puzzle Interaction}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{0.20\linewidth}|>{\raggedright\arraybackslash}p{0.20\linewidth}|>{\raggedright\arraybackslash}p{0.20\linewidth}|>{\raggedright\arraybackslash}p{0.30\linewidth}|}
+\caption{User Stories: Puzzle Interaction}\label{tab:userstories-puzzle}\\
+\hline
+\textbf{I want to} & \textbf{Given} & \textbf{When} & \textbf{Then} \\
+\hline
+See my local puzzle information & The gameplay scene is active & I approach the puzzle area & The game shows my local symbols and target equation values \\
+\hline
+Rotate my assigned die & I am close to the die and interaction is available & I press the interact key & The system performs one die roll step \\
+\hline
+Provide the other player's missing value & Both participants are communicating puzzle data & I set my die to the requested face & The shared puzzle state advances toward a valid solution \\
+\hline
+Solve the puzzle cooperatively & Both dice are on correct values & The values remain stable for the hold duration & The system marks the puzzle as solved \\
+\hline
+Open the bars after a valid solve & The puzzle was solved & The solve state is confirmed & The application starts the bars opening animation \\
+\hline
+Prevent post-solve random changes & The puzzle is solved & I try to rotate a die again & The game keeps dice locked and ignores further rolls \\
+\hline
+\end{longtable}
+
+\subsection*{Pause and Options During Gameplay}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{0.16\linewidth}|>{\raggedright\arraybackslash}p{0.22\linewidth}|>{\raggedright\arraybackslash}p{0.16\linewidth}|>{\raggedright\arraybackslash}p{0.36\linewidth}|}
+\caption{User Stories: Pause and Options During Gameplay}\label{tab:userstories-pause-options}\\
+\hline
+\textbf{I want to} & \textbf{Given} & \textbf{When} & \textbf{Then} \\
+\hline
+Open the pause menu & Gameplay is active and no blocking screen is shown & I press the pause input & The system displays the pause menu overlay \\
+\hline
+Resume gameplay & The pause menu is open & I click \textit{Continue} or close the menu & The application hides the menu and restores control \\
+\hline
+Open options from pause & The pause menu is open & I click \textit{Options} & The application displays the options screen \\
+\hline
+Apply changed options & The options screen is open & I change a setting value & The system applies the setting and stores it persistently \\
+\hline
+Keep gameplay blocked while menu is open & Pause or options UI is open & I attempt world interaction & The game ignores gameplay interaction input until UI is closed \\
+\hline
+\end{longtable}
+
+\subsection*{End and Recovery Flow}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{0.20\linewidth}|>{\raggedright\arraybackslash}p{0.25\linewidth}|>{\raggedright\arraybackslash}p{0.15\linewidth}|>{\raggedright\arraybackslash}p{0.30\linewidth}|}
+\caption{User Stories: End and Recovery Flow}\label{tab:userstories-end-recovery}\\
+\hline
+\textbf{I want to} & \textbf{Given} & \textbf{When} & \textbf{Then} \\
+\hline
+Finish the level for both players & The bars are open and at least one player reaches the end trigger & The trigger is entered & The system shows the end screen for all participants \\
+\hline
+Stop gameplay actions on victory & The end screen is shown & I try to move or interact & The game keeps gameplay controls disabled \\
+\hline
+Return to main menu after victory & The end screen is shown & I click \textit{Main Menu} & The application returns to the main menu scene \\
+\hline
+Handle disconnect safely & A client disconnect occurs before victory & Network callback is received & The system shows the connection-lost screen \\
+\hline
+Exit from the connection-lost screen & The connection-lost screen is open & I click \textit{Exit} & The system closes the application \\
+\hline
+\end{longtable}
