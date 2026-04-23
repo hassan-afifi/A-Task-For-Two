@@ -1,27 +1,94 @@
 \chapter{Introduction}
 
 \section{Problem Background}
-Online cooperative puzzle games require effective communication between participants interacting within a shared environment. This thesis presents \textit{A Task for Two}, a two-player online cooperative first-person puzzle system in which both users receive partial information and must collaborate to complete the objective. The system was implemented in Unity using Netcode for GameObjects and Relay-based online session management \cite{unity_ngo_networkvariable_docs,unity_ngo_rpc_docs,unity_relay_docs}.
+Cooperative puzzle games are fundamentally communication problems implemented as software systems. Players must coordinate actions in real time while each participant only sees part of the full state. This creates two parallel requirements: first, the gameplay design must force meaningful cooperation; second, the implementation must keep the shared state consistent between remote clients despite asynchronous input and network delay.
 
-The core gameplay mechanic is a synchronized symbol puzzle. Each participant is presented with a different equation and controls a die that influences the counterpart's missing value. The puzzle is solved only when both users set the correct values and maintain the correct state long enough for the gate bars to open. This mechanism enforces progress through communication rather than random trial-and-error interaction.
+This thesis presents \textit{A Task for Two}, a two-player online first-person cooperative puzzle application implemented in Unity. The system uses Unity Netcode for GameObjects for replicated state and object ownership, and Unity Relay for session transport and host--client connectivity \cite{unity_ngo_networkvariable_docs,unity_ngo_rpc_docs,unity_relay_docs}. The objective of the implemented vertical slice is to let two remote participants create or join a shared session, solve one synchronized puzzle through communication, and reach a common terminal state (victory or disconnect recovery).
 
-\section{Motivation for Topic Choice}
-The topic was chosen because it combines practical game development with core software engineering challenges, including real-time interaction, network synchronization, and reliable user-facing behavior. A cooperative puzzle system provides a well-defined scope for demonstrating requirements analysis, architectural design, implementation, and testing within the constraints of a bachelor thesis.
+The central gameplay mechanic is an asymmetric symbol puzzle. Each side sees one equation with one hidden value and two visible values. Each participant controls exactly one interactable die. The key dependency is intentionally cross-wired: each die contributes to the \emph{other} participant's missing value. The puzzle reaches solved state only when both dice show the correct values continuously for a configured hold duration; after that, a barrier rises and level completion becomes possible. This design prevents accidental success by rapid random input and turns communication into a required gameplay action.
 
-\section{Thesis Goals}
-The primary goal of the project is to design and implement a robust cooperative system prototype that is technically reliable and maintainable. The software goals are:
-
+From a software perspective, the project integrates several concerns that are often separated in smaller coursework examples:
 \begin{itemize}
-\item Ensure that puzzle logic is deterministic and consistently synchronized across the network.
-\item Provide a stable host--client lifecycle for session creation and joining.
-\item Maintain clear separation of gameplay responsibilities across system components.
-\item Support configurable user options with persistent storage.
-\item Verify system behavior through automated and manual testing.
+\item session lifecycle control (menu, host/join, scene transition, return),
+\item authority-aware multiplayer gameplay state updates,
+\item local player control and remote presentation synchronization,
+\item persistent settings and session identity management,
+\item automated behavior verification in edit mode and play mode.
 \end{itemize}
 
-The educational goal of the thesis is to demonstrate full-cycle software engineering: requirements analysis, architecture and implementation decisions, testing, and evaluation.
+Because these concerns interact directly during runtime, the implementation quality depends on clean module boundaries and explicit state transitions rather than isolated feature coding.
+
+\section{Motivation for Topic Choice}
+The selected topic combines practical game development with core software engineering challenges that are suitable for BSc-level demonstration. A cooperative online puzzle system is small enough to remain implementable within thesis constraints, yet complex enough to require explicit architectural decisions, deterministic rule implementation, and comprehensive behavior validation.
+
+The motivation is not limited to ``building a game.'' The project is used as a vehicle to demonstrate engineering decisions under realistic runtime constraints:
+\begin{itemize}
+\item handling remote participants with different local timelines,
+\item preserving consistent puzzle and interaction state through authority rules,
+\item preventing fragile dependencies between menu logic and gameplay logic,
+\item maintaining user-configurable runtime settings across scenes and sessions,
+\item designing tests that check behavior rather than only object existence.
+\end{itemize}
+
+Another motivation is educational depth. The system requires end-to-end thinking across requirements, architecture, implementation, verification, and evaluation. Instead of focusing on content quantity (many levels or assets), the work focuses on correctness, maintainability, and predictable behavior in real host/client runs.
+
+\section{Thesis Goals}
+The primary goal is to design and implement a robust cooperative system prototype that is technically reliable, maintainable, and demonstrably testable. The goals are grouped into functional and quality-oriented targets.
+
+\subsection*{Functional Goals}
+\begin{itemize}
+\item Implement a complete two-player session path: create host, join by code, load gameplay, and return safely to main menu.
+\item Implement deterministic puzzle behavior where both participants solve each other's missing value through die interaction.
+\item Enforce solve validation via continuous correctness hold logic, then trigger barrier opening and level completion flow.
+\item Implement disconnect handling that leads to a controlled connection-lost state instead of undefined gameplay behavior.
+\item Provide in-game options with runtime application for display, controls, audio, crosshair, and HUD visibility.
+\item Persist relevant user/session values across scene transitions and later launches.
+\end{itemize}
+
+\subsection*{Quality Goals}
+\begin{itemize}
+\item Keep multiplayer authority rules explicit and isolated from pure UI logic.
+\item Keep module responsibilities clear (session/networking, player, puzzle, UI/options, end/recovery, services).
+\item Apply fail-fast setup validation for missing critical references in runtime components.
+\item Provide automated tests for critical branches and expected outcomes across edit mode and play mode.
+\item Support manual multi-client validation on real host/client runs.
+\end{itemize}
+
+\subsection*{Academic Objective}
+The educational goal is to demonstrate full-cycle software engineering: requirement decomposition, architecture and implementation decisions, verification strategy, and result evaluation in one coherent project artifact.
 
 \section{Scope and Constraints}
-The scope of the thesis is a complete and stable cooperative gameplay vertical slice. It includes session creation and joining, synchronized puzzle interaction, level completion, and end-screen flow. The implementation also provides in-game menus, persistent user options, runtime error handling, and behavior-focused automated tests.
+The thesis scope is a stable and complete cooperative gameplay vertical slice. The implemented scope includes:
+\begin{itemize}
+\item main-menu driven session setup (host and join by code),
+\item synchronized multiplayer gameplay scene with owner-bound player control,
+\item asymmetric puzzle generation and solve validation,
+\item barrier-open transition and shared end-screen flow,
+\item disconnect recovery flow with dedicated UI state,
+\item pause/options integration with persistent settings,
+\item behavior-focused automated tests and manual runtime validation.
+\end{itemize}
 
-The objective is engineering quality in a thesis-sized system prototype while prioritizing reliability and maintainability over feature breadth. Therefore, large-scale production features (for example, global matchmaking at scale, anti-cheat systems, or a multi-level content pipeline) are intentionally out of scope. This keeps the work focused on correctness, maintainability, and reproducible behavior in real two-player sessions.
+Several constraints shaped the implementation:
+\begin{itemize}
+\item \textbf{Two-player focus}: core logic, puzzle targeting, and session assumptions are intentionally optimized for exactly two participants.
+\item \textbf{Prototype-level backend model}: identity and options persistence are local (PlayerPrefs), without account backend services.
+\item \textbf{Single-level gameplay target}: the work prioritizes deterministic behavior and architecture quality over content breadth.
+\item \textbf{Thesis-time limits}: development effort is directed to correctness and maintainability instead of production-scale live-service features.
+\end{itemize}
+
+Consequently, large-scale production features are intentionally excluded, such as global matchmaking/discovery infrastructure, cross-device account synchronization, anti-cheat hardening beyond current authority boundaries, and full multi-level campaign tooling. This exclusion is deliberate and keeps the contribution aligned with the thesis objective: a technically coherent, verified cooperative multiplayer implementation.
+
+\section{Thesis Contributions}
+The contribution of this thesis extends beyond the delivery of a playable prototype to the design and implementation of a technically structured multiplayer system with explicit authority boundaries, deterministic puzzle rules, and verified runtime behavior. The main contributions are:
+
+\begin{itemize}
+\item \textbf{Deterministic asymmetric puzzle design and implementation:} a two-sided equation puzzle was implemented where each participant controls the counterpart's missing value. Solve acceptance is based on continuous correctness hold and post-solve lock behavior, preventing accidental or race-like success states.
+\item \textbf{Session lifecycle architecture for host/join workflows:} the system provides a complete menu-to-game-to-menu lifecycle with input validation, Relay-based host/client startup, controlled scene transitions, and explicit shutdown handling for safe return and exit paths.
+\item \textbf{Authority-driven gameplay structure:} player control, interaction, and shared-state mutation are separated by responsibility and ownership boundaries, ensuring that local responsiveness and replicated network consistency are achieved without introducing hidden coupling.
+\item \textbf{Reusable runtime options subsystem with persistence:} display, camera, audio, crosshair, and HUD settings are implemented with immediate runtime application and local persistence, and reused consistently from both main-menu and pause-menu contexts.
+\item \textbf{Explicit success and failure end-state handling:} victory and disconnect recovery are implemented as separate, deterministic flows with dedicated UI states, reducing undefined behavior during multiplayer session interruptions.
+\item \textbf{Behavior-oriented verification package:} the project includes automated edit-mode and play-mode testing (90 tests total) and manual multi-client validation scenarios to confirm end-to-end behavior under practical host/client conditions.
+\end{itemize}
+
+Together, these contributions demonstrate a complete BSc-level software engineering outcome: requirements are translated into a coherent architecture, the architecture is realized through a modular implementation, and the implementation is validated through repeatable automated and manual verification methods.

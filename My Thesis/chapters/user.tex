@@ -1,35 +1,62 @@
-\chapter{User Documentation}
+﻿\chapter{User Documentation}
 
 \section{Short Problem Statement}
-This application provides a cooperative two-player puzzle experience in which each participant has only partial information. The task can only be completed if both users communicate and set the correct puzzle values together.
+\textit{A Task for Two} is a cooperative two-player puzzle application in which each player has incomplete local information. Neither player can solve the puzzle independently because each side controls a die that contributes to the other player's missing equation value.
+
+The practical user problem solved by the game is coordinated remote puzzle solving, where both players must create/join the same online session, communicate observed values, perform synchronized actions, and complete a shared objective. The level can be finished only when both sides maintain the correct puzzle state long enough for the barrier to open.
 
 \section{Brief Method Overview}
-The system is based on synchronized state sharing between two connected participants. Each participant sees a different puzzle view and controls one die that influences the other participant's missing value. The puzzle is considered solved only when both dice are set to the correct values and remain stable long enough for the bars to open. This design enforces coordinated interaction instead of random rapid input.
+The implemented method combines asymmetric puzzle information with synchronized multiplayer state updates. Each side receives one equation with a hidden value, while each player can rotate exactly one die. Puzzle progress therefore depends on exchanging information and setting values for the counterpart rather than self-solving.
+
+Session connectivity is managed through Unity Relay and host/client Netcode startup. During runtime, each player controls only their own player object. Puzzle state, die lock status, and end-state triggers are synchronized between both players. The solve algorithm requires continuous correctness for a hold duration, which prevents accidental success from random rapid interactions.
+
+The user-facing flow is intentionally linear and explicit: session setup in the main menu, puzzle collaboration in gameplay, then one of two terminal states (victory end screen or connection-lost recovery).
 
 \section{System Requirements}
 \subsection*{User Requirements}
-The application requires a Windows-based system capable of running the Unity standalone build. A keyboard and mouse are required for interaction.
+The runtime application targets Windows standalone execution with keyboard and mouse input.
 
-\subsection*{Development Requirements (optional)}
-For development and running from source, the following tools are required:
+\begin{table}[H]
+\centering
+\caption{Runtime Requirements}
+\label{tab:runtime-requirements}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{0.2\linewidth}|>{\raggedright\arraybackslash}p{0.7\linewidth}|}
+\hline
+\textbf{Requirement} & \textbf{Details} \\
+\hline
+Operating system & Windows (standalone Unity player target). \\
+\hline
+Input devices & Keyboard and mouse are required for the default control scheme. \\
+\hline
+Display & Any desktop resolution supported by the monitor and Unity player. \\
+\hline
+Network & Internet access is required for host/join multiplayer sessions via Relay. \\
+\hline
+Audio output & Recommended for menu feedback, die roll, barrier, and end-state sound cues. \\
+\hline
+\end{tabular}
+\end{table}
 
+\subsection*{Network Requirements}
 \begin{itemize}
-\item Unity Hub.
-\item Unity Editor \texttt{6000.3.10f1}.
-\item Git.
-\item Git LFS.
-\item Visual Studio Code \texttt{1.111.0}.
+\item Both players must run compatible builds of the same project version.
+\item The host shares a six-character join code generated at session creation.
+\item A stable internet connection is required; disconnects route to a dedicated recovery screen.
 \end{itemize}
 
-Platform note:
+\subsection*{Development Requirements (optional)}
+For development, testing, and running from source, the following tools were used:
 \begin{itemize}
-\item Windows standalone build support is available by default on the Windows Unity installation used for this project.
-\item Additional build targets can be installed from Unity Hub if needed.
+\item Unity Hub,
+\item Unity Editor \texttt{6000.3.10f1},
+\item Git,
+\item Git LFS,
+\item Visual Studio Code \texttt{1.111.0}.
 \end{itemize}
 
 \section{Installation and Startup}
 \begin{enumerate}
-\item The application can be obtained by cloning the project repository:
+\item Obtain the project source by cloning the repository:
 \begin{verbatim}
 git clone https://github.com/hassan-afifi/A_Task_For_Two.git
 \end{verbatim}
@@ -38,37 +65,250 @@ or
 git clone git@github.com:hassan-afifi/A_Task_For_Two.git
 \end{verbatim}
 
-\item Enter the project folder:
+\item Enter the project directory:
 \begin{verbatim}
 cd A_Task_For_Two
 \end{verbatim}
 
-\item Enable and pull Git LFS assets:
+\item Pull large assets managed by Git LFS:
 \begin{verbatim}
 git lfs install
 git lfs pull
 \end{verbatim}
 
-\item Open Unity Hub, choose \textbf{Add project from disk}, select the cloned folder, and open it with Unity Editor \texttt{6000.3.10f1}.
+\item Open Unity Hub, choose \textbf{Add project from disk}, select the repository folder, and open it with Unity Editor \texttt{6000.3.10f1}.
+
+\item Open the \texttt{MainMenu} scene, press Play, and verify that menu panels, name input, and options UI load correctly.
 \end{enumerate}
 
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{images/UnityProject.png}
+\caption{Project opened in Unity Editor.}
+\label{fig:unity-project-open}
+\end{figure}
+
 \section{Controls and Interaction}
-The game uses standard first-person controls with keyboard movement and mouse-based camera control. Interaction with objects, such as the puzzle die, is performed using the designated interact key.
+The control scheme follows standard first-person keyboard and mouse bindings. Movement and camera look are continuous actions, while interaction and menu actions are event-driven.
+
+\begin{table}[H]
+\centering
+\caption{Default Keyboard and Mouse Controls}
+\label{tab:default-controls}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{0.15\linewidth}|>{\raggedright\arraybackslash}p{0.3\linewidth}|>{\raggedright\arraybackslash}p{0.45\linewidth}|}
+\hline
+\textbf{Action} & \textbf{Default Input} & \textbf{Behavior} \\
+\hline
+Move & \texttt{W/A/S/D} (or arrow keys) & Moves the local player in first-person space. \\
+\hline
+Look & Mouse movement & Rotates player body (yaw) and camera pitch. \\
+\hline
+Jump & \texttt{Space} & Performs jump when grounded and not blocked by crouch/cooldown. \\
+\hline
+Sprint & \texttt{Left Shift} (hold) & Multiplies movement speed while not crouching. \\
+\hline
+Crouch & \texttt{Left Ctrl} & Toggles crouch state and updates capsule/camera height. \\
+\hline
+Interact & \texttt{E} or \texttt{Enter} & Triggers raycast interaction with the assigned puzzle die. \\
+\hline
+Pause & \texttt{Escape} & Opens or closes the pause menu during gameplay. \\
+\hline
+Menu click & Mouse left button & Activates UI controls (buttons, sliders, dropdowns). \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{images/GameView.png}
+\caption{First-person gameplay view during active player control.}
+\label{fig:first-person-view}
+\end{figure}
 
 \section{Gameplay Flow}
 \begin{enumerate}
-\item Open the main menu and create or join a session.
-\item Move to the puzzle area once both participants are connected.
-\item Read your local puzzle symbols and communicate with the other participant.
-\item Rotate your die to provide the value required by the other participant's puzzle.
-\item Keep both dice on correct values until the bars open.
-\item Move forward to complete the level and trigger the end screen.
+\item Open the main menu and create or join a session. The host uses \textit{Create Game} while the second player enters the shared join code and uses \textit{Join Game}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{images/MainMenu.png}
+\caption{Main menu interface with session creation and join options.}
+\label{fig:main-menu-flow}
+\end{figure}
+
+\item Move to the puzzle area once both players are connected. Ownership-based spawn and movement control ensures each player controls only their own character.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{images/SecondPlayer.png}
+\caption{Both players connected in the gameplay scene.}
+\label{fig:both-players-scene}
+\end{figure}
+
+\item Read local puzzle symbols and communicate observed values to the other player. Each side sees only partial equation information, so communication is mandatory.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{images/PuzzleA.png}
+\caption{Player A view showing partial puzzle information.}
+\label{fig:puzzle-a-view}
+\end{figure}
+
+\item Rotate your assigned die to provide the value required by your partner's puzzle. The die can be rolled only when interaction raycast conditions are satisfied.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{images/PuzzleB.png}
+\caption{Player B view showing partial puzzle information.}
+\label{fig:puzzle-b-view}
+\end{figure}
+
+\item Keep both dice on the correct values until the hold condition is met. If a wrong value appears or a die is still rolling, hold progress resets.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{images/BarsUp1.png}
+\caption{Puzzle solved state with opened barrier.}
+\label{fig:puzzle-solved-bars}
+\end{figure}
+
+\newpage
+
+\item Move through the opened path to trigger the shared victory sequence and end screen.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{images/EndScreen.png}
+\caption{End screen displayed after level completion.}
+\label{fig:end-screen-flow}
+\end{figure}
+
+\item If a network disconnect occurs before victory, the connection-lost screen is shown instead of normal gameplay continuation.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{images/HostConnectionLost.png}
+\caption{Connection-lost screen displayed when a player disconnects during an active session.}
+\label{fig:connection-lost-flow}
+\end{figure}
 \end{enumerate}
 
+\section{Session Validation}
+The menu layer applies deterministic input validation before allowing session operations:
+\begin{itemize}
+\item Player name must contain at least one letter.
+\item Join code must contain exactly six characters after trimming.
+\item Join code is normalized to uppercase before join request.
+\item Create/Join buttons are interactable only when corresponding validation rules pass.
+\end{itemize}
+
+These checks reduce invalid network requests and provide immediate feedback before Relay operations start.
+
+\section{Options and HUD}
+The options screen applies changes at runtime and stores them in local persistent storage.
+
+\subsection*{Display and Camera Settings}
+\begin{table}[H]
+\centering
+\caption{Display and Camera Options}
+\label{tab:display-camera-options}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{0.2\linewidth}|>{\raggedright\arraybackslash}p{0.25\linewidth}|>{\raggedright\arraybackslash}p{0.45\linewidth}|}
+\hline
+\textbf{Setting} & \textbf{Range / Modes} & \textbf{Runtime Behavior} \\
+\hline
+Display mode & Windowed / Borderless / Fullscreen & Applies fullscreen mode immediately; borderless uses highest-ranked available resolution. \\
+\hline
+Resolution & Available monitor resolutions & In fullscreen, list is filtered by aspect ratio; in borderless, manual selection is disabled. \\
+\hline
+Quality level & Unity quality presets & Applies selected quality index through \texttt{QualitySettings}. \\
+\hline
+Field of view & 60--100 (default 80) & Applies to owner camera and persists. \\
+\hline
+Sensitivity & 1--100\% (step 1) & Mapped to runtime sensitivity 0.01--1.00 and applied to owner movement. \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection*{Audio Settings}
+\begin{table}[H]
+\centering
+\caption{Audio Options}
+\label{tab:audio-options}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{0.25\linewidth}|>{\raggedright\arraybackslash}p{0.1\linewidth}|>{\raggedright\arraybackslash}p{0.55\linewidth}|}
+\hline
+\textbf{Setting} & \textbf{Range} & \textbf{Runtime Behavior} \\
+\hline
+Master volume & 0--100\% & Controls master mixer parameter (fallback to listener when needed). \\
+\hline
+Game SFX volume & 0--100\% & Controls gameplay sound effects channel. \\
+\hline
+Menu SFX volume & 0--100\% & Controls UI hover/click sound channel. \\
+\hline
+Game music volume & 0--100\% & Controls gameplay music channel; can be muted by end/disconnect flow. \\
+\hline
+Menu music volume & 0--100\% & Controls menu music channel. \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection*{Crosshair and HUD Settings}
+\begin{table}[H]
+\centering
+\caption{Crosshair and HUD Options}
+\label{tab:hud-options}
+\begin{tabular}{|>{\raggedright\arraybackslash}p{0.25\linewidth}|>{\raggedright\arraybackslash}p{0.2\linewidth}|>{\raggedright\arraybackslash}p{0.45\linewidth}|}
+\hline
+\textbf{Setting} & \textbf{Range / States} & \textbf{Runtime Behavior} \\
+\hline
+Crosshair size & 1--10 & Mapped to 5--50 pixel UI size. \\
+\hline
+Crosshair color & 10 preset colors & Applies immediately to crosshair graphic. \\
+\hline
+Show FPS & On / Off & Toggles FPS widget visibility. \\
+\hline
+Show Ping & On / Off & Toggles ping widget visibility. \\
+\hline
+Show System Clock & On / Off & Toggles clock widget visibility. \\
+\hline
+\end{tabular}
+\end{table}
+
+All options are saved automatically and reloaded on subsequent sessions.
+
 \section{Use Case Diagram}
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth,height=0.92\textheight,keepaspectratio]{images/UseCaseDiagram.png}
+\caption{A Task For Two use case diagram.}
+\label{fig:use-case-diagram}
+\end{figure}
+
+\subsection*{Use Case Diagram Description}
+Figure~\ref{fig:use-case-diagram} summarizes user-facing behavior from session initialization to terminal states. The primary actor is \textit{Player}, specialized as \textit{Host Player} and \textit{Client Player}. \textit{Unity Relay Service} appears as an external actor because connectivity depends on Relay allocation and join flows.
+
+The use cases represent the complete operational path:
+\begin{itemize}
+\item setup actions (set player name, choose character, configure settings),
+\item session actions (create session, join session, connect via Relay),
+\item runtime actions (control player, pause/resume, interact with puzzle, solve puzzle),
+\item terminal actions (complete level, handle connection loss, view end state).
+\end{itemize}
+
+\subsection*{Relationship Explanation}
+The relationships describe dependency and specialization semantics:
+\begin{itemize}
+\item Host and client specialize common player capabilities but execute different session-entry actions.
+\item Session creation/joining depends on external Relay service interaction.
+\item Puzzle interaction includes solve behavior; solve behavior includes completion progression.
+\item Completion and disconnect both lead to terminal UI flows.
+\end{itemize}
+
+Overall, the model captures the complete user interaction lifecycle, from session initialization to termination states.
+
+\newpage
 
 \section{User Stories}
-The following user stories summarize expected user-facing behavior in Given--When--Then format.
+The following user stories document expected behavior in Given--When--Then format and are aligned with implemented runtime flow.
 
 \subsection*{Main Menu and Session Flow}
 \begin{longtable}{|>{\raggedright\arraybackslash}p{0.18\linewidth}|>{\raggedright\arraybackslash}p{0.22\linewidth}|>{\raggedright\arraybackslash}p{0.15\linewidth}|>{\raggedright\arraybackslash}p{0.35\linewidth}|}
@@ -78,17 +318,19 @@ The following user stories summarize expected user-facing behavior in Given--Whe
 \hline
 Open the options menu & The main menu is visible & I click \textit{Options} & The application displays the options screen \\
 \hline
-Close the options menu & The options screen is visible & I click \textit{Back} or \textit{Close} & The system returns to the main menu panel \\
+Close the options menu & The options screen is visible & I click \textit{Back} or \textit{Close} & The interface returns to the main menu panel \\
 \hline
-Create a host session & I entered a valid player name & I click \textit{Create Game} & The system starts host creation and transitions to gameplay \\
+Create a host session & I entered a valid player name & I click \textit{Create Game} & Hosting starts and gameplay loading begins \\
 \hline
-Join an existing session & I entered a valid player name and join code & I click \textit{Join Game} & The system starts client connection and joins the host session \\
+Join an existing session & I entered a valid player name and join code & I click \textit{Join Game} & Client connection starts and the player joins the session \\
 \hline
-Avoid invalid session actions & Name or code input is invalid & I stay on the menu screen & The system keeps create/join actions unavailable \\
+Avoid invalid session actions & Name or code input is invalid & I stay on the menu screen & Create and join actions remain unavailable \\
 \hline
-Exit the application & I am in a menu screen & I click \textit{Exit} & The system closes the application \\
+Exit the application & I am in a menu screen & I click \textit{Exit} & The application closes \\
 \hline
 \end{longtable}
+
+\newpage
 
 \subsection*{Puzzle Interaction}
 \begin{longtable}{|>{\raggedright\arraybackslash}p{0.20\linewidth}|>{\raggedright\arraybackslash}p{0.20\linewidth}|>{\raggedright\arraybackslash}p{0.20\linewidth}|>{\raggedright\arraybackslash}p{0.30\linewidth}|}
@@ -96,19 +338,21 @@ Exit the application & I am in a menu screen & I click \textit{Exit} & The syste
 \hline
 \textbf{I want to} & \textbf{Given} & \textbf{When} & \textbf{Then} \\
 \hline
-See my local puzzle information & The gameplay scene is active & I approach the puzzle area & The game shows my local symbols and target equation values \\
+See my local puzzle information & The gameplay scene is active & I approach the puzzle area & The interface shows my local symbols and target equation values \\
 \hline
-Rotate my assigned die & I am close to the die and interaction is available & I press the interact key & The system performs one die roll step \\
+Rotate my assigned die & I am close to the die and interaction is available & I press the interact key & The die performs one roll step \\
 \hline
-Provide the other player's missing value & Both participants are communicating puzzle data & I set my die to the requested face & The shared puzzle state advances toward a valid solution \\
+Provide the other player's missing value & Both players are communicating puzzle data & I set my die to the requested face & The shared puzzle state advances toward a valid solution \\
 \hline
-Solve the puzzle cooperatively & Both dice are on correct values & The values remain stable for the hold duration & The system marks the puzzle as solved \\
+Solve the puzzle cooperatively & Both dice are on correct values & The values remain stable for the hold duration & The puzzle is marked as solved \\
 \hline
-Open the bars after a valid solve & The puzzle was solved & The solve state is confirmed & The application starts the bars opening animation \\
+Open the bars after a valid solve & The puzzle was solved & The solve state is confirmed & The barrier opening animation starts \\
 \hline
-Prevent post-solve random changes & The puzzle is solved & I try to rotate a die again & The game keeps dice locked and ignores further rolls \\
+Prevent post-solve random changes & The puzzle is solved & I try to rotate a die again & Further die-roll attempts are ignored while dice stay locked \\
 \hline
 \end{longtable}
+
+\newpage
 
 \subsection*{Pause and Options During Gameplay}
 \begin{longtable}{|>{\raggedright\arraybackslash}p{0.16\linewidth}|>{\raggedright\arraybackslash}p{0.22\linewidth}|>{\raggedright\arraybackslash}p{0.16\linewidth}|>{\raggedright\arraybackslash}p{0.36\linewidth}|}
@@ -116,17 +360,19 @@ Prevent post-solve random changes & The puzzle is solved & I try to rotate a die
 \hline
 \textbf{I want to} & \textbf{Given} & \textbf{When} & \textbf{Then} \\
 \hline
-Open the pause menu & Gameplay is active and no blocking screen is shown & I press the pause input & The system displays the pause menu overlay \\
+Open the pause menu & Gameplay is active and no blocking screen is shown & I press the pause input & The pause menu overlay appears \\
 \hline
-Resume gameplay & The pause menu is open & I click \textit{Continue} or close the menu & The application hides the menu and restores control \\
+Resume gameplay & The pause menu is open & I click \textit{Continue} or close the menu & The overlay closes and control is restored \\
 \hline
-Open options from pause & The pause menu is open & I click \textit{Options} & The application displays the options screen \\
+Open options from pause & The pause menu is open & I click \textit{Options} & The options screen opens \\
 \hline
-Apply changed options & The options screen is open & I change a setting value & The system applies the setting and stores it persistently \\
+Apply changed options & The options screen is open & I change a setting value & The new setting is applied and stored persistently \\
 \hline
-Keep gameplay blocked while menu is open & Pause or options UI is open & I attempt world interaction & The game ignores gameplay interaction input until UI is closed \\
+Keep gameplay blocked while menu is open & Pause or options UI is open & I attempt world interaction & World interaction stays blocked until the UI is closed \\
 \hline
 \end{longtable}
+
+\newpage
 
 \subsection*{End and Recovery Flow}
 \begin{longtable}{|>{\raggedright\arraybackslash}p{0.20\linewidth}|>{\raggedright\arraybackslash}p{0.25\linewidth}|>{\raggedright\arraybackslash}p{0.15\linewidth}|>{\raggedright\arraybackslash}p{0.30\linewidth}|}
@@ -134,14 +380,14 @@ Keep gameplay blocked while menu is open & Pause or options UI is open & I attem
 \hline
 \textbf{I want to} & \textbf{Given} & \textbf{When} & \textbf{Then} \\
 \hline
-Finish the level for both players & The bars are open and at least one player reaches the end trigger & The trigger is entered & The system shows the end screen for all participants \\
+Finish the level for both players & The bars are open and at least one player reaches the end trigger & The trigger is entered & The end screen is shown for both players \\
 \hline
-Stop gameplay actions on victory & The end screen is shown & I try to move or interact & The game keeps gameplay controls disabled \\
+Stop gameplay actions on victory & The end screen is shown & I try to move or interact & Gameplay controls remain disabled \\
 \hline
-Return to main menu after victory & The end screen is shown & I click \textit{Main Menu} & The application returns to the main menu scene \\
+Return to main menu after victory & The end screen is shown & I click \textit{Main Menu} & The main menu scene loads \\
 \hline
-Handle disconnect safely & A client disconnect occurs before victory & Network callback is received & The system shows the connection-lost screen \\
+Handle disconnect safely & A client disconnect occurs before victory & Network callback is received & The connection-lost screen appears \\
 \hline
-Exit from the connection-lost screen & The connection-lost screen is open & I click \textit{Exit} & The system closes the application \\
+Exit from the connection-lost screen & The connection-lost screen is open & I click \textit{Exit} & The application closes \\
 \hline
 \end{longtable}
