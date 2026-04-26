@@ -409,8 +409,8 @@
 
 % ------------------------------
 % Index
-\RequirePackage{makeidx}
-\makeindex
+ \RequirePackage{makeidx}
+ \makeindex
 % ------------------------------
 
 % ------------------------------
@@ -573,4 +573,3 @@
 		\setcounter{page}{\value{conpageno}}
 	}
 }
-

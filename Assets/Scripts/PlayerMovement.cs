@@ -263,6 +263,6 @@ public class PlayerMovement : NetworkBehaviour
     // Returns spawn position based on local ownership role.
     Vector3 GetSpawn()
     {
-        return OwnerClientId == NetworkManager.ServerClientId ? new Vector3(6f, 0f, 0f) : new Vector3(-6f, 0f, 0f);
+        return OwnerClientId == NetworkManager.ServerClientId ? new Vector3(6f, 0.5f, 0f) : new Vector3(-6f, 0.5f, 0f);
     }
 }

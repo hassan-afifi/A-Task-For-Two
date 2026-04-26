@@ -1,9 +1,9 @@
 \chapter{Introduction}
 
 \section{Problem Background}
-Cooperative puzzle games are fundamentally communication problems implemented as software systems. Players must coordinate actions in real time while each participant only sees part of the full state. This creates two parallel requirements: first, the gameplay design must force meaningful cooperation; second, the implementation must keep the shared state consistent between remote clients despite asynchronous input and network delay.
+Online cooperative puzzle games are fundamentally communication problems implemented as software systems. Players must coordinate actions in real time while each participant only sees part of the full state. This creates two parallel requirements: first, the gameplay design must force meaningful cooperation; second, the implementation must keep the shared state consistent between remote clients despite asynchronous input and network delay.
 
-This thesis presents \textit{A Task for Two}, a two-player online first-person cooperative puzzle application implemented in Unity. The system uses Unity Netcode for GameObjects for replicated state and object ownership, and Unity Relay for session transport and host--client connectivity \cite{unity_ngo_networkvariable_docs,unity_ngo_rpc_docs,unity_relay_docs}. The objective of the implemented vertical slice is to let two remote participants create or join a shared session, solve one synchronized puzzle through communication, and reach a common terminal state (victory or disconnect recovery).
+This thesis presents \textit{A Task for Two}, a two-player online first-person cooperative puzzle game implemented in Unity. The system uses Unity Netcode for GameObjects for replicated state and object ownership, and Unity Relay for session transport and host--client connectivity \cite{unity_ngo_networkvariable_docs,unity_ngo_rpc_docs,unity_relay_docs}. The objective of the implemented vertical slice is to let two remote participants create or join a shared session, solve one synchronized puzzle through communication, and reach a common terminal state (victory or client-side host-disconnect recovery).
 
 The central gameplay mechanic is an asymmetric symbol puzzle. Each side sees one equation with one hidden value and two visible values. Each participant controls exactly one interactable die. The key dependency is intentionally cross-wired: each die contributes to the \emph{other} participant's missing value. The puzzle reaches solved state only when both dice show the correct values continuously for a configured hold duration; after that, a barrier rises and level completion becomes possible. This design prevents accidental success by rapid random input and turns communication into a required gameplay action.
 
@@ -13,13 +13,13 @@ From a software perspective, the project integrates several concerns that are of
 \item authority-aware multiplayer gameplay state updates,
 \item local player control and remote presentation synchronization,
 \item persistent settings and session identity management,
-\item automated behavior verification in edit mode and play mode.
+\item automated behavior verification in edit mode and play mode tests.
 \end{itemize}
 
 Because these concerns interact directly during runtime, the implementation quality depends on clean module boundaries and explicit state transitions rather than isolated feature coding.
 
 \section{Motivation for Topic Choice}
-The selected topic combines practical game development with core software engineering challenges that are suitable for BSc-level demonstration. A cooperative online puzzle system is small enough to remain implementable within thesis constraints, yet complex enough to require explicit architectural decisions, deterministic rule implementation, and comprehensive behavior validation.
+The selected topic combines practical game development with core software engineering challenges that are suitable for BSc-level demonstration. An online cooperative puzzle game is small enough to remain implementable within thesis constraints, yet complex enough to require explicit architectural decisions, deterministic rule implementation, and comprehensive behavior validation.
 
 The motivation is not limited to ``building a game.'' The project is used as a vehicle to demonstrate engineering decisions under realistic runtime constraints:
 \begin{itemize}
@@ -33,29 +33,29 @@ The motivation is not limited to ``building a game.'' The project is used as a v
 Another motivation is educational depth. The system requires end-to-end thinking across requirements, architecture, implementation, verification, and evaluation. Instead of focusing on content quantity (many levels or assets), the work focuses on correctness, maintainability, and predictable behavior in real host/client runs.
 
 \section{Thesis Goals}
-The primary goal is to design and implement a robust cooperative system prototype that is technically reliable, maintainable, and demonstrably testable. The goals are grouped into functional and quality-oriented targets.
+The primary goal is to design and implement a robust cooperative system prototype that is reliable, maintainable, and demonstrably testable.
 
 \subsection*{Functional Goals}
 \begin{itemize}
-\item Implement a complete two-player session path: create host, join by code, load gameplay, and return safely to main menu.
-\item Implement deterministic puzzle behavior where both participants solve each other's missing value through die interaction.
-\item Enforce solve validation via continuous correctness hold logic, then trigger barrier opening and level completion flow.
-\item Implement disconnect handling that leads to a controlled connection-lost state instead of undefined gameplay behavior.
-\item Provide in-game options with runtime application for display, controls, audio, crosshair, and HUD visibility.
-\item Persist relevant user/session values across scene transitions and later launches.
+\item Implement a complete two-player session path: host creation, join by code, gameplay load, and safe return to the main menu.
+\item Implement deterministic puzzle behavior where each participant solves the other’s missing value through die interaction.
+\item Enforce solve validation via continuous correctness hold logic, triggering barrier opening and level completion.
+\item Implement host-disconnect handling that transitions the connected client to a controlled connection-lost state.
+\item Provide in-game options with runtime application for display, controls, audio, crosshair, and HUD.
+\item Persist user and session values across scene transitions and later launches.
 \end{itemize}
 
 \subsection*{Quality Goals}
 \begin{itemize}
-\item Keep multiplayer authority rules explicit and isolated from pure UI logic.
-\item Keep module responsibilities clear (session/networking, player, puzzle, UI/options, end/recovery, services).
-\item Apply fail-fast setup validation for missing critical references in runtime components.
-\item Provide automated tests for critical branches and expected outcomes across edit mode and play mode.
-\item Support manual multi-client validation on real host/client runs.
+\item Keep multiplayer authority rules explicit and separated from UI logic.
+\item Maintain clear module responsibilities (session/networking, player, puzzle, UI/options, end/recovery, services).
+\item Apply fail-fast validation for missing critical references in runtime components.
+\item Provide automated tests for key behaviors in both edit mode and play mode.
+\item Support manual multi-client validation in real host/client runs.
 \end{itemize}
 
 \subsection*{Academic Objective}
-The educational goal is to demonstrate full-cycle software engineering: requirement decomposition, architecture and implementation decisions, verification strategy, and result evaluation in one coherent project artifact.
+The educational goal is to demonstrate full-cycle software engineering: requirement decomposition, architectural design, implementation, verification, and evaluation in a single coherent system.
 
 \section{Scope and Constraints}
 The thesis scope is a stable and complete cooperative gameplay vertical slice. The implemented scope includes:
@@ -64,7 +64,7 @@ The thesis scope is a stable and complete cooperative gameplay vertical slice. T
 \item synchronized multiplayer gameplay scene with owner-bound player control,
 \item asymmetric puzzle generation and solve validation,
 \item barrier-open transition and shared end-screen flow,
-\item disconnect recovery flow with dedicated UI state,
+\item host-disconnect recovery flow with dedicated client-side UI state,
 \item pause/options integration with persistent settings,
 \item behavior-focused automated tests and manual runtime validation.
 \end{itemize}
@@ -87,8 +87,8 @@ The contribution of this thesis extends beyond the delivery of a playable protot
 \item \textbf{Session lifecycle architecture for host/join workflows:} the system provides a complete menu-to-game-to-menu lifecycle with input validation, Relay-based host/client startup, controlled scene transitions, and explicit shutdown handling for safe return and exit paths.
 \item \textbf{Authority-driven gameplay structure:} player control, interaction, and shared-state mutation are separated by responsibility and ownership boundaries, ensuring that local responsiveness and replicated network consistency are achieved without introducing hidden coupling.
 \item \textbf{Reusable runtime options subsystem with persistence:} display, camera, audio, crosshair, and HUD settings are implemented with immediate runtime application and local persistence, and reused consistently from both main-menu and pause-menu contexts.
-\item \textbf{Explicit success and failure end-state handling:} victory and disconnect recovery are implemented as separate, deterministic flows with dedicated UI states, reducing undefined behavior during multiplayer session interruptions.
-\item \textbf{Behavior-oriented verification package:} the project includes automated edit-mode and play-mode testing (90 tests total) and manual multi-client validation scenarios to confirm end-to-end behavior under practical host/client conditions.
+\item \textbf{Explicit success and failure end-state handling:} victory and host-disconnect recovery are implemented as separate, deterministic flows with dedicated UI states, reducing undefined behavior during multiplayer session interruptions.
+\item \textbf{Behavior-oriented verification package:} the project includes automated edit mode and play mode testing (90 tests total) and manual multi-client validation scenarios to confirm end-to-end behavior under practical host/client conditions.
 \end{itemize}
 
-Together, these contributions demonstrate a complete BSc-level software engineering outcome: requirements are translated into a coherent architecture, the architecture is realized through a modular implementation, and the implementation is validated through repeatable automated and manual verification methods.
+Together, these contributions demonstrate a complete BSc-level software engineering outcome: requirements are translated into a coherent architecture, the architecture is realized through a modular implementation, and the implementation is validated through repeatable automated and manual testing methods.

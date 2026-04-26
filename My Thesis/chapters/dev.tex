@@ -24,14 +24,14 @@ The game loop is implemented through the following functional requirements.
 \item Puzzle solved state is accepted only after continuous correctness hold.
 \item Solved puzzle raises a barrier and enables level completion.
 \item Entering the end trigger transitions all participants to a shared end screen.
-\item Disconnect before victory transitions the affected participant to a connection-lost flow.
+\item Host disconnect before victory transitions the connected client to a connection-lost flow.
 \end{enumerate}
 
 \begin{table}[H]
 \centering
 \caption{Functional Requirement to Implementation Mapping}
 \label{tab:functional-mapping}
-\begin{tabular}{|>{\raggedright\arraybackslash}p{0.1\linewidth}|>{\raggedright\arraybackslash}p{0.3\linewidth}|>{\raggedright\arraybackslash}p{0.5\linewidth}|}
+\begin{tabular}{|>{\centering\arraybackslash}m{0.1\linewidth}|>{\centering\arraybackslash}m{0.3\linewidth}|>{\centering\arraybackslash}m{0.5\linewidth}|}
 \hline
 \textbf{ID} & \textbf{Requirement} & \textbf{Primary Implementation Components} \\
 \hline
@@ -49,12 +49,12 @@ FR-6 & Barrier open transition & \texttt{PuzzleController.RaiseBars} \\
 \hline
 FR-7 & Shared victory state & \texttt{EndScreen} (RPC-triggered local show) \\
 \hline
-FR-8 & Disconnect recovery state & \texttt{ConnectionLost} callback handling \\
+FR-8 & Host-disconnect recovery state & \texttt{ConnectionLost} callback handling \\
 \hline
 \end{tabular}
 \end{table}
 
-Figure~\ref{fig:connection-lost-flow} shows the connection-lost screen presented when a session is interrupted.
+Figure~\ref{fig:connection-lost-flow} shows the connection-lost screen presented on clients when host connection is interrupted.
 
 \subsection*{Non-Functional Requirements}
 The implementation targets the following quality constraints:
@@ -70,7 +70,7 @@ The implementation targets the following quality constraints:
 \centering
 \caption{Non-Functional Requirement Verification}
 \label{tab:nonfunctional-verification}
-\begin{tabular}{|>{\raggedright\arraybackslash}p{0.2\linewidth}|>{\raggedright\arraybackslash}p{0.35\linewidth}|>{\raggedright\arraybackslash}p{0.35\linewidth}|}
+\begin{tabular}{|>{\centering\arraybackslash}m{0.2\linewidth}|>{\centering\arraybackslash}m{0.35\linewidth}|>{\centering\arraybackslash}m{0.35\linewidth}|}
 \hline
 \textbf{Requirement} & \textbf{Implementation Strategy} & \textbf{Verification Approach} \\
 \hline
@@ -96,7 +96,7 @@ Table~\ref{tab:concept-definitions} summarizes the main technical terms used thr
 \centering
 \caption{Concepts and Definitions}
 \label{tab:concept-definitions}
-\begin{tabular}{|>{\raggedright\arraybackslash}p{0.25\linewidth}|>{\raggedright\arraybackslash}p{0.25\linewidth}|>{\raggedright\arraybackslash}p{0.4\linewidth}|}
+\begin{tabular}{|>{\centering\arraybackslash}m{0.25\linewidth}|>{\centering\arraybackslash}m{0.25\linewidth}|>{\centering\arraybackslash}m{0.4\linewidth}|}
 \hline
 \textbf{Term} & \textbf{Definition} & \textbf{Project-Specific Usage} \\
 \hline
@@ -121,7 +121,7 @@ The application is implemented in Unity with C\# scripts, Netcode for GameObject
 \item \textbf{Session and networking layer}: menu validation, relay create/join, net startup, scene transition.
 \item \textbf{Gameplay layer}: player movement/interaction, die animation, puzzle solve state, barrier/open flow.
 \item \textbf{UI and settings layer}: menu panels, pause/options behavior, persisted user preferences.
-\item \textbf{Verification layer}: edit-mode and play-mode behavior tests.
+\item \textbf{Verification layer}: edit mode and play mode behavior tests.
 \end{itemize}
 
 \newpage
@@ -136,7 +136,7 @@ The runtime sequence follows a deterministic system-level flow:
 \item Participants interact with puzzle dice through ownership-safe raycast actions.
 \item Server-authoritative logic evaluates the hold condition and updates the shared puzzle state accordingly.
 \item Barrier opens and end trigger broadcasts shared end-screen state.
-\item Disconnect before victory redirects to connection-lost recovery UI.
+\item Host disconnect before victory redirects the connected client to connection-lost recovery UI.
 \end{enumerate}
 
 This separation prevents network transport concerns from propagating into UI components and keeps gameplay logic independent of menu panel implementation details.
@@ -160,7 +160,7 @@ The resulting entity-component style is well suited to the thesis scope: explici
 
 The resulting architecture prioritizes correctness, observability, and maintainability over feature breadth. This tradeoff is appropriate for the thesis scope and provides a stable base for future extensions. The combination of component-based composition, authoritative state management, and layered module separation enables predictable runtime behavior and supports iterative development.
 
-\section{Module Diagram}
+\section{System Modules}
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{images/ModuleDiagram.png}
@@ -176,7 +176,7 @@ Figure~\ref{fig:module-diagram} presents a high-level module view of the system 
 \item \textbf{Gameplay Layer}: encapsulates the interactive game domain, including player control, puzzle rule evaluation, and game-flow transitions (start, solve, finish, fail). It translates user actions into rule-driven outcomes.
 \item \textbf{Networking Layer}: coordinates session lifecycle, shared state replication, ownership boundaries, and authoritative validation. This layer guarantees that multiplayer-critical decisions are evaluated consistently and published as replicated state.
 \item \textbf{Persistence Layer}: stores device-local preferences and profile-related values used across sessions, such as options and player identity settings.
-\item \textbf{Verification Layer}: defines automated quality gates through edit-mode and play-mode tests. It validates isolated logic, runtime interactions, and critical end-to-end behavior paths.
+\item \textbf{Verification Layer}: defines automated quality gates through edit mode and play mode tests. It validates isolated logic, runtime interactions, and critical end-to-end behavior paths.
 \item \textbf{Unity Platform and Services}: supplies foundational runtime and service infrastructure, including engine execution, Netcode replication APIs, Relay transport, authentication services, local storage, and the Unity Test Framework.
 \end{itemize}
 
@@ -192,41 +192,8 @@ The dependency direction in Figure~\ref{fig:module-diagram} is intentional and r
 
 This design ensures responsive user interaction, consistent multiplayer behavior, and explicit subsystem boundaries that support maintainability, testing, and future extension.
 
-\section{Logical Structure}
-The project is partitioned into script groups by responsibility:
-\begin{itemize}
-\item \textbf{Session/flow}: \texttt{MainMenu}, \texttt{RelayManager}, \texttt{GameSession}, \texttt{MenuActions}, \texttt{PauseMenu}, \texttt{ConnectionLost}, \texttt{EndScreen}.
-\item \textbf{Player control/presentation}: \texttt{PlayerInputHandler}, \texttt{PlayerMovement}, \texttt{PlayerInteractor}, \texttt{PlayerVisuals}, \texttt{PlayerAudio}, \texttt{CharacterAnimation}, \texttt{CharacterSelection}.
-\item \textbf{Puzzle domain}: \texttt{PuzzleController}, \texttt{DieClickAnimate}.
-\item \textbf{UI widgets}: \texttt{OptionsMenu}, \texttt{SliderHelper}, \texttt{AnimatedToggle}, \texttt{GenderToggle}, \texttt{DropdownHelper}, \texttt{HudStats}, \texttt{MenuSfx}.
-\item \textbf{Service}: \texttt{AudioManager}.
-\end{itemize}
-
-Two design rules are applied consistently:
-\begin{itemize}
-\item \textbf{Authority rule}: gameplay mutations that affect shared state are validated and committed through server-authoritative logic.
-\item \textbf{Fail-fast setup rule}: major runtime components validate serialized references during startup and throw explicit setup errors when required references are missing.
-\end{itemize}
-
-This approach reduces hidden coupling and improves runtime observability and diagnosability.
-
-\section{Physical Structure}
-The repository follows Unity conventions with explicit test separation.
-\begin{itemize}
-\item \texttt{Assets/Scenes}: menu and gameplay scenes.
-\item \texttt{Assets/Prefabs}: reusable scene objects for players, puzzle, and UI.
-\item \texttt{Assets/Scripts}: gameplay, UI, networking, and service logic.
-\item \texttt{Assets/Tests/EditMode}: fast logic/component tests.
-\item \texttt{Assets/Tests/PlayMode}: runtime and integration-like behavior tests.
-\item \texttt{ProjectSettings}: rendering, input, quality, and engine settings.
-\end{itemize}
-
-This structure supports clear navigation for development and reproducible builds.
-
-\newpage
-
-\section{System Modules}
-This section describes the main runtime modules and their responsibilities within the system architecture.
+\subsection*{Module Responsibilities}
+The following subsections describe the main runtime modules and their responsibilities within the system architecture.
 
 \subsection*{Session and Networking Module}
 This module handles menu-triggered session lifecycle from initial input to synchronized scene transition.
@@ -289,33 +256,81 @@ Puzzle behavior is implemented by \texttt{PuzzleController} and \texttt{DieClick
 \end{itemize}
 
 \subsection*{UI and Options Module}
-The options layer applies runtime configuration and persistence for display, controls, audio, crosshair, and HUD widgets.
+The options subsystem applies changes at runtime and stores them in local persistent storage.
 
-\textbf{Implemented option behavior:}
-\begin{itemize}
-\item display mode switching between windowed/borderless/fullscreen,
-\item resolution list rebuild by mode (fullscreen filtering by aspect ratio),
-\item quality level selection,
-\item owner camera FOV and sensitivity update,
-\item five mixer-controlled audio channels,
-\item crosshair size/color updates,
-\item FPS/ping/clock widget visibility toggles.
-\end{itemize}
-
-All changes are persisted through \texttt{PlayerPrefs} \cite{unity_playerprefs_docs}. The same options logic is reused from both main-menu and pause-menu contexts.
-
-\begin{figure}[H]
+\subsubsection*{Display and Camera Settings}
+\begin{table}[H]
 \centering
-\includegraphics[width=0.9\textwidth]{images/OptionsMenu.png}
-\caption{Options UI overlay used to configure runtime settings.}
-\label{fig:options-overlay}
-\end{figure}
+\caption{Display and Camera Options}
+\label{tab:display-camera-options}
+\begin{tabular}{|>{\centering\arraybackslash}m{0.2\linewidth}|>{\centering\arraybackslash}m{0.25\linewidth}|>{\centering\arraybackslash}m{0.45\linewidth}|}
+\hline
+\textbf{Setting} & \textbf{Range / Modes} & \textbf{Runtime Behavior} \\
+\hline
+Display mode & Windowed / Borderless / Fullscreen & Applies fullscreen mode immediately; borderless uses highest-ranked available resolution. \\
+\hline
+Resolution & Available monitor resolutions & In fullscreen, list is filtered by aspect ratio; in borderless, manual selection is disabled. \\
+\hline
+Quality level & High / Medium / Low & Maps the selected option to the corresponding \texttt{QualitySettings} preset index and applies it at runtime. \\
+\hline
+Field of view & 60--100 (default 80) & Applies to owner camera and persists. \\
+\hline
+Sensitivity & 1--100\% (step 1) & Mapped to runtime sensitivity 0.01--1.00 and applied to owner movement. \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsubsection*{Audio Settings}
+\begin{table}[H]
+\centering
+\caption{Audio Options}
+\label{tab:audio-options}
+\begin{tabular}{|>{\centering\arraybackslash}m{0.25\linewidth}|>{\centering\arraybackslash}m{0.1\linewidth}|>{\centering\arraybackslash}m{0.55\linewidth}|}
+\hline
+\textbf{Setting} & \textbf{Range} & \textbf{Runtime Behavior} \\
+\hline
+Master volume & 0--100\% & Controls master mixer parameter (fallback to listener when needed). \\
+\hline
+Game SFX volume & 0--100\% & Controls gameplay sound effects channel. \\
+\hline
+Menu SFX volume & 0--100\% & Controls UI hover/click sound channel. \\
+\hline
+Game music volume & 0--100\% & Controls gameplay music channel; can be muted by end/disconnect flow. \\
+\hline
+Menu music volume & 0--100\% & Controls menu music channel. \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsubsection*{Crosshair and HUD Settings}
+\begin{table}[H]
+\centering
+\caption{Crosshair and HUD Options}
+\label{tab:hud-options}
+\begin{tabular}{|>{\centering\arraybackslash}m{0.25\linewidth}|>{\centering\arraybackslash}m{0.2\linewidth}|>{\centering\arraybackslash}m{0.45\linewidth}|}
+\hline
+\textbf{Setting} & \textbf{Range / States} & \textbf{Runtime Behavior} \\
+\hline
+Crosshair size & 1--10 & Mapped to 5--50 pixel UI size. \\
+\hline
+Crosshair color & 10 preset colors & Applies immediately to crosshair graphic. \\
+\hline
+Show FPS & On / Off & Toggles FPS widget visibility. \\
+\hline
+Show Ping & On / Off & Toggles ping widget visibility. \\
+\hline
+Show System Clock & On / Off & Toggles clock widget visibility. \\
+\hline
+\end{tabular}
+\end{table}
+
+All options are persisted through \texttt{PlayerPrefs} \cite{unity_playerprefs_docs} and reloaded in both main-menu and pause-menu contexts.
 
 \subsection*{End and Recovery Module}
 End-of-session behavior is split into success and recovery paths.
 \begin{itemize}
 \item \texttt{EndScreen} watches trigger occupancy, broadcasts shared end-state, disables owner controls, and performs a timed fade sequence before showing end UI.
-\item \texttt{ConnectionLost} listens for local disconnect callbacks (excluding intentional shutdown and server-side paths) and shows recovery UI.
+\item \texttt{ConnectionLost} listens for local disconnect callbacks on the connected client (excluding intentional shutdown and server-side paths) and shows recovery UI when host connection is lost.
 \item Both flows call \texttt{PauseMenu.ForceClose()} to avoid conflicting overlays.
 \end{itemize}
 
@@ -326,45 +341,7 @@ End-of-session behavior is split into success and recovery paths.
 \label{fig:pause-overlay}
 \end{figure}
 
-\section{Design Decisions}
-The implementation incorporates several design decisions derived during development and testing.
-
-\subsection*{Continuous Solve Validation}
-A key gameplay correction was enforcing continuous correctness during the solve hold duration. The final logic resets hold progress immediately when values become wrong or dice are still rolling, preventing delayed solve acceptance after transient correctness.
-
-\subsection*{Network Lifecycle Cleanup}
-A duplicate \texttt{NetworkManager} issue after returning to menu was addressed by centralizing network shutdown and object destruction in \texttt{MenuActions.StopNet}. This keeps menu return/exit paths consistent.
-
-\subsection*{Session Initialization Order}
-\texttt{GameSession} uses explicit early execution order to reduce startup race conditions with menu components that read session data during enable/awake phases.
-
-\subsection*{UI Input Module Consistency in Tests}
-Play-mode tests explicitly ensure EventSystem compatibility with the active Input System setup to avoid legacy module mismatches during automated UI interaction checks.
-
-\section{Error Handling}
-Error handling is implemented through explicit guard logic across startup, session actions, and shutdown paths.
-
-\subsection*{Startup and Setup Validation}
-Core runtime components apply fail-fast setup validation for required serialized references. Missing critical references are surfaced immediately during initialization to prevent partial execution with undefined behavior. This approach improves fault localization and reduces debugging time during both development and testing.
-
-\subsection*{Session Input Guards}
-Session operations are protected by deterministic menu-side validation before network calls are issued. Name and join-code constraints are validated locally, and create/join actions remain disabled until input is valid. These guards reduce invalid create/join attempts and keep session lifecycle behavior predictable.
-
-\subsection*{Safe Shutdown and Return Flow}
-Menu return and exit operations use centralized shutdown through \texttt{MenuActions.StopNet}. Network manager teardown and related cleanup are applied before scene changes, which avoids duplicate manager instances and stale network state across repeated session cycles.
-
-\newpage
-
-\section{Fault Recovery}
-Recovery behavior covers runtime interruption scenarios and their verification paths.
-
-\subsection*{Disconnect Recovery Flow}
-Unexpected session interruption is handled through the dedicated \texttt{ConnectionLost} path. Disconnect callbacks trigger controlled recovery UI instead of allowing gameplay to continue in a degraded network state. This keeps failure behavior explicit and prevents ambiguous user-facing outcomes.
-
-\subsection*{Recovery Path Verification}
-Recovery behavior is verified through both automated and manual validation. Play-mode tests cover menu/session transitions, disconnect-related flows, and runtime cleanup-sensitive paths, while edit-mode checks cover local guard logic and utility behavior. Manual host/client runs further confirm disconnect recovery and return-to-menu reliability under practical conditions.
-
-\section{Data Structures and State Handling}
+\section{Data Structures and State Management}
 The project does not rely on an external relational database. This choice aligns with the scope and requirements of a small-scale multiplayer prototype. State is split into replicated runtime state and local persisted configuration.
 
 \subsection*{Runtime and Networked State}
@@ -372,7 +349,7 @@ The project does not rely on an external relational database. This choice aligns
 \centering
 \caption{Primary Runtime State Containers}
 \label{tab:runtime-state-containers}
-\begin{tabular}{|>{\raggedright\arraybackslash}p{0.22\linewidth}|>{\raggedright\arraybackslash}p{0.3\linewidth}|>{\raggedright\arraybackslash}p{0.38\linewidth}|}
+\begin{tabular}{|>{\centering\arraybackslash}m{0.22\linewidth}|>{\centering\arraybackslash}m{0.3\linewidth}|>{\centering\arraybackslash}m{0.38\linewidth}|}
 \hline
 \textbf{Container} & \textbf{Type} & \textbf{Purpose} \\
 \hline
@@ -396,7 +373,7 @@ Persistent values are stored with \texttt{PlayerPrefs} \cite{unity_playerprefs_d
 \centering
 \caption{Persistent Preference Keys}
 \label{tab:prefs-keys}
-\begin{tabular}{|>{\raggedright\arraybackslash}p{0.4\linewidth}|>{\raggedright\arraybackslash}p{0.08\linewidth}|>{\raggedright\arraybackslash}p{0.42\linewidth}|}
+\begin{tabular}{|>{\centering\arraybackslash}m{0.4\linewidth}|>{\centering\arraybackslash}m{0.08\linewidth}|>{\centering\arraybackslash}m{0.42\linewidth}|}
 \hline
 \textbf{Key} & \textbf{Type} & \textbf{Meaning} \\
 \hline
@@ -408,7 +385,7 @@ Persistent values are stored with \texttt{PlayerPrefs} \cite{unity_playerprefs_d
 \hline
 \texttt{opt\_resolution\_width} / \texttt{opt\_resolution\_height} & int & Selected resolution dimensions. \\
 \hline
-\texttt{opt\_quality\_level} & int & Quality level index. \\
+\texttt{opt\_quality\_level} & int & Quality option index. \\
 \hline
 \texttt{opt\_camera\_fov} & float & Owner camera field-of-view. \\
 \hline
@@ -435,10 +412,131 @@ Persistent values are stored with \texttt{PlayerPrefs} \cite{unity_playerprefs_d
 
 The boundary is explicit: replicated multiplayer state is networked, while device/user-specific configuration remains local.
 
-\section{Class Diagram}
-\begin{figure}[htbp]
+\section{Objects Structure}
+The project is partitioned into script groups by responsibility:
+\begin{itemize}
+\item \textbf{Session/flow}: \texttt{MainMenu}, \texttt{RelayManager}, \texttt{GameSession}, \texttt{MenuActions}, \texttt{PauseMenu}, \texttt{ConnectionLost}, \texttt{EndScreen}.
+\item \textbf{Player control/presentation}: \texttt{PlayerInputHandler}, \texttt{PlayerMovement}, \texttt{PlayerInteractor}, \texttt{PlayerVisuals}, \texttt{PlayerAudio}, \texttt{CharacterAnimation}, \texttt{CharacterSelection}.
+\item \textbf{Puzzle domain}: \texttt{PuzzleController}, \texttt{DieClickAnimate}.
+\item \textbf{UI widgets}: \texttt{OptionsMenu}, \texttt{SliderHelper}, \texttt{AnimatedToggle}, \texttt{GenderToggle}, \texttt{DropdownHelper}, \texttt{HudStats}, \texttt{MenuSfx}.
+\item \textbf{Service}: \texttt{AudioManager}.
+\end{itemize}
+
+Two design rules are applied consistently:
+\begin{itemize}
+\item \textbf{Authority rule}: gameplay mutations that affect shared state are validated and committed through server-authoritative logic.
+\item \textbf{Fail-fast setup rule}: major runtime components validate serialized references during startup and throw explicit setup errors when required references are missing.
+\end{itemize}
+
+This approach reduces hidden coupling and improves runtime observability and diagnosability.
+
+\section{Physical Structure}
+The repository follows Unity conventions with explicit test separation.
+\begin{itemize}
+\item \texttt{Assets/Animations}: animation clips and animator-related assets.
+\item \texttt{Assets/Audio}: audio clips, mixer assets, and sound resources.
+\item \texttt{Assets/Materials}: rendering materials used by scene and prefab assets.
+\item \texttt{Assets/Models}: imported 3D model assets.
+\item \texttt{Assets/Prefabs}: reusable scene objects for players, puzzle, and UI.
+\item \texttt{Assets/Scenes}: menu and gameplay scenes.
+\item \texttt{Assets/Scripts}: gameplay, UI, networking, and service logic.
+\item \texttt{Assets/Settings}: project-level render and runtime settings assets.
+\item \texttt{Assets/Tests/EditMode}: fast logic/component tests.
+\item \texttt{Assets/Tests/PlayMode}: runtime and integration-like behavior tests.
+\item \texttt{Assets/TextMeshPro}: TextMeshPro fonts and TMP configuration assets.
+\item \texttt{Assets/Textures}: texture resources used by models and UI elements.
+\item \texttt{Packages}: Unity package dependencies and package configuration.
+\item \texttt{ProjectSettings}: rendering, input, quality, and engine settings.
+\end{itemize}
+
+This structure supports clear navigation for development and reproducible builds.
+
+\section{Development Setup}
+This section is intended for development and testing from source code rather than release-build gameplay execution.
+
+\subsection*{Development Requirements}
+For development, testing, and source-level debugging, the following tools were used:
+\begin{itemize}
+\item Unity Hub,
+\item Unity Editor \texttt{6000.3.10f1},
+\item Git,
+\item Git LFS,
+\item Visual Studio Code.
+\end{itemize}
+
+\subsection*{Repository Setup and Editor Startup}
+\begin{enumerate}
+\item Clone the repository:
+\begin{verbatim}
+git clone https://github.com/hassan-afifi/A_Task_For_Two.git
+\end{verbatim}
+or
+\begin{verbatim}
+git clone git@github.com:hassan-afifi/A_Task_For_Two.git
+\end{verbatim}
+
+\item Enter the project directory:
+\begin{verbatim}
+cd A_Task_For_Two
+\end{verbatim}
+
+\item Pull large assets managed by Git LFS:
+\begin{verbatim}
+git lfs install
+git lfs pull
+\end{verbatim}
+
+\item Open Unity Hub, select \textbf{Add project from disk}, choose the repository folder, and open it with Unity Editor \texttt{6000.3.10f1}.
+\item Open the \texttt{MainMenu} scene and press Play to verify that menu panels, name input, and options UI initialize correctly.
+\end{enumerate}
+
+\begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth,height=0.92\textheight,keepaspectratio]{images/ClassDiagram.png}
+\includegraphics[width=0.95\textwidth]{images/UnityProject.png}
+\caption{Project opened from source in Unity Editor.}
+\label{fig:unity-project-open-dev}
+\end{figure}
+
+\section{Design Decisions}
+The implementation incorporates several design decisions derived during development and testing.
+
+\subsection*{Continuous Solve Validation}
+A key gameplay correction was enforcing continuous correctness during the solve hold duration. The final logic resets hold progress immediately when values become wrong or dice are still rolling, preventing delayed solve acceptance after transient correctness.
+
+\subsection*{Network Lifecycle Cleanup}
+A duplicate \texttt{NetworkManager} issue after returning to menu was addressed by centralizing network shutdown and object destruction in \texttt{MenuActions.StopNet}. This keeps menu return/exit paths consistent.
+
+\subsection*{Session Initialization Order}
+\texttt{GameSession} uses explicit early execution order to reduce startup race conditions with menu components that read session data during enable/awake phases.
+
+\subsection*{UI Input Module Consistency in Tests}
+play mode tests explicitly ensure EventSystem compatibility with the active Input System setup to avoid legacy module mismatches during automated UI interaction checks.
+
+\section{Error Handling}
+Error handling is implemented through explicit guard logic across startup, session actions, and shutdown paths.
+
+\subsection*{Startup and Setup Validation}
+Core runtime components apply fail-fast setup validation for required serialized references. Missing critical references are surfaced immediately during initialization to prevent partial execution with undefined behavior. This approach improves fault localization and reduces debugging time during both development and testing.
+
+\subsection*{Session Input Guards}
+Session operations are protected by deterministic menu-side validation before network calls are issued. Name and join-code constraints are validated locally, and create/join actions remain disabled until input is valid. These guards reduce invalid create/join attempts and keep session lifecycle behavior predictable.
+
+\subsection*{Safe Shutdown and Return Flow}
+Menu return and exit operations use centralized shutdown through \texttt{MenuActions.StopNet}. Network manager teardown and related cleanup are applied before scene changes, which avoids duplicate manager instances and stale network state across repeated session cycles.
+
+\section{Fault Recovery}
+Recovery behavior covers runtime interruption scenarios and their verification paths.
+
+\subsection*{Disconnect Recovery Flow}
+Unexpected host-session interruption is handled through the dedicated \texttt{ConnectionLost} path. Client-side disconnect callbacks trigger controlled recovery UI instead of allowing gameplay to continue in a degraded network state. This keeps failure behavior explicit and prevents ambiguous user-facing outcomes.
+
+\subsection*{Recovery Path Verification}
+Recovery behavior is verified through both automated and manual validation. play mode tests cover menu/session transitions, disconnect-related flows, and runtime cleanup-sensitive paths, while edit mode checks cover local guard logic and utility behavior. Manual host/client runs further confirm disconnect recovery and return-to-menu reliability under practical conditions.
+
+\section{Class Diagram}
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth,height=0.9\textheight,keepaspectratio]{images/ClassDiagram.png}
 \caption{A Task For Two class diagram (MVC-oriented view).}
 \label{fig:class-diagram}
 \end{figure}
@@ -474,8 +572,6 @@ The applied test design policy is:
 \item \textbf{Play mode} is used for runtime orchestration, coroutine timing, scene transitions, network-aware components, and owner/non-owner behavior.
 \end{itemize}
 
-\newpage
-
 \subsection*{Isolation Techniques}
 To preserve repeatability, tests use explicit cleanup and deterministic scaffolding:
 \begin{itemize}
@@ -501,7 +597,7 @@ Manual testing complements automated tests in scenarios where real-time multipla
 \centering
 \caption{Manual Test Execution Criteria}
 \label{tab:manual-test-criteria}
-\begin{tabular}{|>{\raggedright\arraybackslash}p{0.3\linewidth}|>{\raggedright\arraybackslash}p{0.6\linewidth}|}
+\begin{tabular}{|>{\centering\arraybackslash}m{0.3\linewidth}|>{\centering\arraybackslash}m{0.6\linewidth}|}
 \hline
 \textbf{Criterion} & \textbf{Pass Condition} \\
 \hline
@@ -518,16 +614,14 @@ Recovery behavior & Disconnect and return-to-menu flows complete without stale n
 \end{tabular}
 \end{table}
 
-\newpage
-
 \section{Test Results}
-At the current development snapshot, the automated suite contains \textbf{90 tests}: \textbf{30 edit-mode} and \textbf{60 play-mode}.
+At the current development snapshot, the automated suite contains \textbf{90 tests}: \textbf{30 edit mode} and \textbf{60 play mode}.
 
 \begin{table}[H]
 \centering
 \caption{Automated Test Files and Focus Areas}
 \label{tab:test-files}
-\begin{tabular}{|>{\raggedright\arraybackslash}p{0.35\linewidth}|>{\raggedright\arraybackslash}p{0.1\linewidth}|>{\raggedright\arraybackslash}p{0.1\linewidth}|>{\raggedright\arraybackslash}p{0.35\linewidth}|}
+\begin{tabular}{|>{\centering\arraybackslash}m{0.35\linewidth}|>{\centering\arraybackslash}m{0.1\linewidth}|>{\centering\arraybackslash}m{0.1\linewidth}|>{\centering\arraybackslash}m{0.35\linewidth}|}
 \hline
 \textbf{Test file} & \textbf{Mode} & \textbf{Count} & \textbf{Primary focus} \\
 \hline
@@ -552,8 +646,6 @@ At the current development snapshot, the automated suite contains \textbf{90 tes
 \end{tabular}
 \end{table}
 
-\newpage
-
 \subsection*{Manual Multi-Client Validation}
 In addition to automated tests, manual host/client runs were executed to validate practical behavior under real interaction conditions, following the criteria defined in Table~\ref{tab:manual-test-criteria}. The key executed scenarios are summarized in Table~\ref{tab:manual-validation}.
 
@@ -561,7 +653,7 @@ In addition to automated tests, manual host/client runs were executed to validat
 \centering
 \caption{Manual Multi-Client Validation Scenarios}
 \label{tab:manual-validation}
-\begin{tabular}{|>{\raggedright\arraybackslash}p{0.2\linewidth}|>{\raggedright\arraybackslash}p{0.35\linewidth}|>{\raggedright\arraybackslash}p{0.35\linewidth}|}
+\begin{tabular}{|>{\centering\arraybackslash}m{0.2\linewidth}|>{\centering\arraybackslash}m{0.35\linewidth}|>{\centering\arraybackslash}m{0.35\linewidth}|}
 \hline
 \textbf{Scenario} & \textbf{Expected Outcome} & \textbf{Observed Result} \\
 \hline
@@ -575,7 +667,7 @@ Pause/options during gameplay & Gameplay input blocked while menu is open & Pass
 \hline
 Victory transition & End screen shown to all participants & Passed; owner controls disabled and fade sequence executed \\
 \hline
-Disconnect before victory & Connection-lost screen shown & Passed; dedicated recovery flow triggered \\
+Host disconnect before victory & Connection-lost screen shown on client & Passed; dedicated recovery flow triggered \\
 \hline
 \end{tabular}
 \end{table}

@@ -57,6 +57,10 @@ public class InputControlsEditTests
         Assert.DoesNotThrow(() => input.OnDestroy());
         SetField(input, "input", null);
         Assert.DoesNotThrow(() => input.OnDestroy());
+
+        TargetInvocationException invocation = Assert.Throws<TargetInvocationException>(() => InvokeNonPublic(input, "EnsureInput"));
+        Assert.That(invocation.InnerException, Is.TypeOf<InvalidOperationException>());
+        Assert.That(invocation.InnerException?.Message, Does.Contain("InputActions is not initialized"));
     }
 
     [Test]
@@ -238,6 +242,14 @@ public class InputControlsEditTests
         Assert.That(field, Is.Not.Null);
         field.SetValue(target, value);
     }
+
+    private static void InvokeNonPublic(object target, string methodName)
+    {
+        MethodInfo method = target.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.That(method, Is.Not.Null);
+        method.Invoke(target, null);
+    }
+    
     private static void DestroyAll<T>() where T : UnityEngine.Object
     {
         T[] objects = UnityEngine.Object.FindObjectsByType<T>(FindObjectsInactive.Include, FindObjectsSortMode.None);

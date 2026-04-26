@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using NUnit.Framework;
+using System;
 using TMPro;
 using Unity.Netcode;
 using Unity.Netcode.Components;
@@ -24,6 +25,15 @@ public class PlayerPlayTests
         Assert.DoesNotThrow(() => movement.OnNetworkSpawn());
         Assert.That(movement.PlayerCamera.enabled, Is.False);
         Assert.That(movement.IsGrounded, Is.False);
+
+        GameObject missingCameraGo = new GameObject("PlayerMovementMissingCameraTest");
+        missingCameraGo.SetActive(false);
+        missingCameraGo.AddComponent<NetworkObject>();
+        missingCameraGo.AddComponent<CharacterController>();
+        missingCameraGo.AddComponent<PlayerInputHandler>();
+        PlayerMovement missingCameraMovement = missingCameraGo.AddComponent<PlayerMovement>();
+        InvalidOperationException missingCameraError = ExpectInner<InvalidOperationException>(() => InvokeNonPublic(missingCameraMovement, "Awake"));
+        Assert.That(missingCameraError.Message, Does.Contain("player camera is missing"));
     }
 
     [Test]
@@ -42,6 +52,35 @@ public class PlayerPlayTests
         Transform nameTagRoot = GetPrivate<Transform>(visuals, "nameTagRoot");
         Assert.That(nameTagRoot.gameObject.activeSelf, Is.True);
         Assert.That(visuals.ActiveAnimator, Is.Not.Null);
+
+        GameObject noCharsGo = new GameObject("PlayerVisualsNoCharsTest");
+        noCharsGo.SetActive(false);
+        noCharsGo.AddComponent<NetworkObject>();
+        noCharsGo.AddComponent<CharacterController>();
+        noCharsGo.AddComponent<PlayerInputHandler>();
+        new GameObject("Camera", typeof(Camera)).transform.SetParent(noCharsGo.transform, false);
+        noCharsGo.AddComponent<PlayerMovement>();
+        noCharsGo.AddComponent<NetworkAnimator>();
+        PlayerVisuals noCharsVisuals = noCharsGo.AddComponent<PlayerVisuals>();
+        InvalidOperationException noCharsError = ExpectInner<InvalidOperationException>(() => InvokeNonPublic(noCharsVisuals, "Awake"));
+        Assert.That(noCharsError.Message, Does.Contain("no character visual roots"));
+
+        GameObject missingNameTagRootGo = new GameObject("PlayerVisualsMissingNameTagRootTest");
+        missingNameTagRootGo.SetActive(false);
+        missingNameTagRootGo.AddComponent<NetworkObject>();
+        missingNameTagRootGo.AddComponent<CharacterController>();
+        missingNameTagRootGo.AddComponent<PlayerInputHandler>();
+        new GameObject("Camera", typeof(Camera)).transform.SetParent(missingNameTagRootGo.transform, false);
+        missingNameTagRootGo.AddComponent<PlayerMovement>();
+        missingNameTagRootGo.AddComponent<NetworkAnimator>();
+        GameObject charRoot = new GameObject("CharacterRoot");
+        charRoot.transform.SetParent(missingNameTagRootGo.transform, false);
+        charRoot.AddComponent<Animator>();
+        new GameObject("NameTagAnchor").transform.SetParent(charRoot.transform, false);
+        PlayerVisuals missingNameTagRootVisuals = missingNameTagRootGo.AddComponent<PlayerVisuals>();
+        InvokeNonPublic(missingNameTagRootVisuals, "Awake");
+        InvalidOperationException missingNameTagRootError = Assert.Throws<InvalidOperationException>(() => missingNameTagRootVisuals.OnNetworkSpawn());
+        Assert.That(missingNameTagRootError.Message, Does.Contain("nameTagRoot"));
     }
 
     [Test]
@@ -60,6 +99,23 @@ public class PlayerPlayTests
         Assert.That(GetPrivate<bool>(audio, "loopOn"), Is.False);
         Assert.That(GetPrivate<bool>(audio, "jumpStarted"), Is.False);
         Assert.That(GetPrivate<bool>(audio, "jumpAirborne"), Is.False);
+
+        PlayerMovement missingLoopClipMovement = BuildPlayerMovement();
+        PlayerAudio missingLoopClipAudio = missingLoopClipMovement.gameObject.AddComponent<PlayerAudio>();
+        AudioClip land = AudioClip.Create("Land", 256, 1, 44100, false);
+        SetField(missingLoopClipAudio, "landClip", land);
+        InvalidOperationException missingLoopClipError = ExpectInner<InvalidOperationException>(() => InvokeNonPublic(missingLoopClipAudio, "Awake"));
+        Assert.That(missingLoopClipError.Message, Does.Contain("movementLoopClip"));
+
+        PlayerMovement missingLandClipMovement = BuildPlayerMovement();
+        PlayerAudio missingLandClipAudio = missingLandClipMovement.gameObject.AddComponent<PlayerAudio>();
+        AudioClip loop = AudioClip.Create("Loop", 256, 1, 44100, false);
+        SetField(missingLandClipAudio, "movementLoopClip", loop);
+        InvalidOperationException missingLandClipError = ExpectInner<InvalidOperationException>(() => InvokeNonPublic(missingLandClipAudio, "Awake"));
+        Assert.That(missingLandClipError.Message, Does.Contain("landClip"));
+
+        InvalidOperationException targetIdsError = ExpectInner<InvalidOperationException>(() => InvokeNonPublic(audio, "TargetIds"));
+        Assert.That(targetIdsError.Message, Does.Contain("NetworkManager reference is missing"));
     }
 
     [Test]
@@ -177,6 +233,13 @@ public class PlayerPlayTests
         MethodInfo method = target.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic);
         Assert.That(method, Is.Not.Null);
         method.Invoke(target, null);
+    }
+
+    private static TException ExpectInner<TException>(TestDelegate action) where TException : Exception
+    {
+        TargetInvocationException invocation = Assert.Throws<TargetInvocationException>(action);
+        Assert.That(invocation.InnerException, Is.TypeOf<TException>());
+        return (TException)invocation.InnerException;
     }
 
     private static void SetField(object target, string fieldName, object value)
