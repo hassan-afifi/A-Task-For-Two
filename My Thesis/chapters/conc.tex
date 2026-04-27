@@ -23,7 +23,7 @@ Verification was performed through both automated and manual methods. The automa
 \centering
 \caption{Thesis Goal Evaluation}
 \label{tab:goal-evaluation}
-\begin{tabular}{|>{\centering\arraybackslash}m{0.35\linewidth}|>{\centering\arraybackslash}m{0.1\linewidth}|>{\centering\arraybackslash}m{0.45\linewidth}|}
+\begin{longtable}{|>{\centering\arraybackslash}m{0.35\linewidth}|>{\centering\arraybackslash}m{0.1\linewidth}|>{\centering\arraybackslash}m{0.45\linewidth}|}
 \hline
 \textbf{Goal} & \textbf{Status} & \textbf{Evidence in Implementation} \\
 \hline
@@ -39,7 +39,7 @@ Automated behavior verification & Achieved & 90 tests across edit and play mode,
 \hline
 Manual practical validation & Achieved & Multi-client runs confirming end-to-end runtime behavior \\
 \hline
-\end{tabular}
+\end{longtable}
 \end{table}
 
 Overall, the thesis objective was fulfilled: a technically coherent, maintainable, and validated cooperative multiplayer prototype was implemented within BSc scope constraints.
@@ -53,7 +53,7 @@ The current system intentionally prioritizes correctness and maintainability for
 \item \textbf{Additional puzzle variants and multi-level progression (incremental extension):} the current puzzle and scene pipeline already supports adding new puzzle rules and additional levels while reusing existing session and player infrastructure.
 \item \textbf{Account-based profiles (requires architectural redesign):} current identity and settings are local; cross-device accounts require backend identity, authentication, and server-side profile storage.
 \item \textbf{Achievement and progression systems (partial extension):} local progression is incremental, while synchronized progression between devices/participants requires account backend support.
-\item \textbf{More than two participants (major redesign):} puzzle targeting, solve rules, and interaction assumptions are currently two-player specific and must be generalized.
+\item \textbf{More than two participants (major redesign):} puzzle targeting, solving rules, and interaction assumptions are currently two-player specific and must be generalized.
 \item \textbf{Public/private rooms with search and discovery (session-layer redesign):} current flow is invite-code based only; room browsing needs lobby/discovery services and expanded UI/state handling.
 \item \textbf{Voice chat and text chat (subsystem integration):} communication channels require additional transport/service integration, UI moderation paths, and runtime permission handling.
 \item \textbf{Security and anti-cheat hardening (partial extension):} core authoritative validation exists, but broader anti-cheat resilience requires additional server-side verification and abuse-resistant networking constraints.
@@ -61,4 +61,4 @@ The current system intentionally prioritizes correctness and maintainability for
 
 These extensions are not required for the thesis objective, but they outline a clear and technically grounded path from the current prototype toward a more complete and scalable multiplayer product.
 
-The results demonstrate that the implemented architecture and development approach are suitable for small-scale cooperative multiplayer systems and provide a strong foundation for future feature growth.
+The results demonstrate that the implemented architecture and development approach are suitable for small-scale cooperative multiplayer systems and provide a solid foundation for future feature growth.
