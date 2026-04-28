@@ -14,8 +14,6 @@ This thesis presented the design and implementation of \textit{A Task for Two}, 
 
 From an engineering perspective, the project met the technical goals defined in the introduction. Multiplayer authority boundaries are explicit, puzzle state is deterministic under server-authoritative synchronization, and scene/menu transitions are handled through centralized flow logic. UI behavior, gameplay behavior, and session orchestration are separated into dedicated modules, which improved maintainability and reduced coupling during development.
 
-\newpage
-
 Verification was performed through both automated and manual methods. The automated suite contains 90 tests distributed evenly across nine focused files (three edit mode and six play mode). In addition, manual multi-client runs confirmed expected behavior in practical host/client sessions, including puzzle completion and disconnect handling.
 
 \subsection*{Goal-by-Goal Outcome}
@@ -24,6 +22,7 @@ Verification was performed through both automated and manual methods. The automa
 \caption{Thesis Goal Evaluation}
 \label{tab:goal-evaluation}
 \begin{longtable}{|>{\centering\arraybackslash}m{0.35\linewidth}|>{\centering\arraybackslash}m{0.1\linewidth}|>{\centering\arraybackslash}m{0.45\linewidth}|}
+\hline
 \hline
 \textbf{Goal} & \textbf{Status} & \textbf{Evidence in Implementation} \\
 \hline
@@ -40,9 +39,10 @@ Automated behavior verification & Achieved & 90 tests across edit and play mode,
 Manual practical validation & Achieved & Multi-client runs confirming end-to-end runtime behavior \\
 \hline
 \end{longtable}
+\addtocounter{table}{-1}
 \end{table}
 
-Overall, the thesis objective was fulfilled: a technically coherent, maintainable, and validated cooperative multiplayer prototype was implemented within BSc scope constraints.
+Overall, the thesis objective was fulfilled: a technically coherent, maintainable, and validated cooperative multiplayer vertical slice was implemented within BSc scope constraints.
 
 \section{Possible Extensions}
 The current system intentionally prioritizes correctness and maintainability for a two-player scope. Future work can extend the project in several directions with different architectural costs.
@@ -59,6 +59,6 @@ The current system intentionally prioritizes correctness and maintainability for
 \item \textbf{Security and anti-cheat hardening (partial extension):} core authoritative validation exists, but broader anti-cheat resilience requires additional server-side verification and abuse-resistant networking constraints.
 \end{itemize}
 
-These extensions are not required for the thesis objective, but they outline a clear and technically grounded path from the current prototype toward a more complete and scalable multiplayer product.
+These extensions are not required for the thesis objective, but they outline a clear and technically grounded path from the current vertical slice toward a more complete and scalable multiplayer product.
 
 The results demonstrate that the implemented architecture and development approach are suitable for small-scale cooperative multiplayer systems and provide a solid foundation for future feature growth.

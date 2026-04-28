@@ -1,9 +1,9 @@
 ﻿\chapter{Developer Documentation}
 
 \section{Detailed Problem Specification}
-The implemented software is a two-player online cooperative puzzle prototype. The core technical objective is to guarantee consistent multiplayer puzzle state while preserving clear separation between networking, gameplay rules, and UI concerns.
+The implemented software is a two-player online cooperative puzzle vertical slice. The core technical objective is to guarantee consistent multiplayer puzzle state while preserving clear separation between networking, gameplay rules, and UI concerns.
 
-The practical engineering challenge is not only puzzle generation, but coordinated runtime behavior across multiple subsystems:
+The challenge is not only puzzle generation, but coordinated runtime behavior across multiple subsystems:
 \begin{itemize}
 \item reliable host/client session initialization,
 \item authority-controlled state mutation,
@@ -31,7 +31,8 @@ The game loop is implemented through the following functional requirements.
 \centering
 \caption{Functional Requirement to Implementation Mapping}
 \label{tab:functional-mapping}
-\begin{tabular}{|>{\centering\arraybackslash}m{0.1\linewidth}|>{\centering\arraybackslash}m{0.3\linewidth}|>{\centering\arraybackslash}m{0.5\linewidth}|}
+\begin{longtable}{|>{\centering\arraybackslash}m{0.1\linewidth}|>{\centering\arraybackslash}m{0.3\linewidth}|>{\centering\arraybackslash}m{0.5\linewidth}|}
+\hline
 \hline
 \textbf{ID} & \textbf{Requirement} & \textbf{Primary Implementation Components} \\
 \hline
@@ -51,7 +52,8 @@ FR-7 & Shared victory state & \texttt{EndScreen} (RPC-triggered local show) \\
 \hline
 FR-8 & Host-disconnect recovery state & \texttt{ConnectionLost} callback handling \\
 \hline
-\end{tabular}
+\end{longtable}
+\addtocounter{table}{-1}
 \end{table}
 
 Figure~\ref{fig:connection-lost-flow} shows the connection-lost screen presented on clients when host connection is interrupted.
@@ -72,6 +74,7 @@ The implementation targets the following quality constraints:
 \label{tab:nonfunctional-verification}
 \begin{longtable}{|>{\centering\arraybackslash}m{0.2\linewidth}|>{\centering\arraybackslash}m{0.35\linewidth}|>{\centering\arraybackslash}m{0.35\linewidth}|}
 \hline
+\hline
 \textbf{Requirement} & \textbf{Implementation Strategy} & \textbf{Verification Approach} \\
 \hline
 Deterministic puzzle state & Server-side \texttt{NetworkVariable\allowbreak<NetworkPuzzleState>} updates & Puzzle play tests (regenerate, solve, equals, lock behavior) \\
@@ -85,6 +88,7 @@ Persistent user options & \texttt{PlayerPrefs}-backed options/session storage & 
 Runtime reliability & Fail-fast setup checks and guarded transitions & Automated tests + manual multi-client runs \\
 \hline
 \end{longtable}
+\addtocounter{table}{-1}
 \end{table}
 
 \newpage
@@ -97,6 +101,7 @@ Table~\ref{tab:concept-definitions} summarizes the main technical terms used thr
 \caption{Concepts and Definitions}
 \label{tab:concept-definitions}
 \begin{longtable}{|>{\centering\arraybackslash}m{0.25\linewidth}|>{\centering\arraybackslash}m{0.25\linewidth}|>{\centering\arraybackslash}m{0.4\linewidth}|}
+\hline
 \hline
 \textbf{Term} & \textbf{Definition} & \textbf{Project-Specific Usage} \\
 \hline
@@ -113,16 +118,20 @@ RPC & Networked remote call mechanism & Roll requests, regenerate requests, end-
 Ownership & Authority assignment for a network object & Player movement/input/interaction only for local owner \cite{unity_ngo_ownership_docs} \\
 \hline
 \end{longtable}
+\addtocounter{table}{-1}
 \end{table}
 
 \section{System Overview}
-The application is implemented in Unity with C\# scripts, Netcode for GameObjects replication, and Relay transport integration \cite{unity_ngo_networkvariable_docs,unity_ngo_rpc_docs,unity_relay_docs}. Runtime responsibilities are intentionally split into four cooperating layers:
+The application is implemented in Unity with C\# scripts, Netcode for GameObjects replication, and Relay transport integration \cite{unity_ngo_networkvariable_docs,unity_ngo_rpc_docs,unity_relay_docs}. Responsibilities are organized according to the layer model shown in Figure~\ref{fig:module-diagram}:
 \begin{itemize}
-\item \textbf{Session and networking layer}: menu validation, relay create/join, net startup, scene transition.
-\item \textbf{Gameplay layer}: player movement/interaction, die animation, puzzle solve state, barrier/open flow.
-\item \textbf{UI and settings layer}: menu panels, pause/options behavior, persisted user preferences.
-\item \textbf{Verification layer}: edit mode and play mode behavior tests.
+\item \textbf{Presentation Layer}: menu/session UI, pause/end/recovery overlays, and in-game HUD feedback.
+\item \textbf{Gameplay Layer}: player control/interaction, cooperative puzzle rules, and game-flow transitions.
+\item \textbf{Networking Layer}: session lifecycle, state replication/ownership handling, and authoritative validation.
+\item \textbf{Persistence Layer}: local preferences and profile cache across sessions.
+\item \textbf{Unity Platform and Services}: Unity Relay, Unity Authentication Services, PlayerPrefs storage, and Netcode for GameObjects.
 \end{itemize}
+
+At runtime, synchronized shared state includes puzzle progression, die lock status, and terminal flow triggers (victory and host-disconnect recovery); solve commit is accepted only after continuous correctness hold evaluation.
 
 \subsection*{Runtime Lifecycle}
 The runtime sequence follows a deterministic system-level flow:
@@ -143,6 +152,8 @@ This separation prevents network transport concerns from propagating into UI com
 \subsection*{Design Principles}
 The architecture follows a separation-of-concerns strategy to isolate session transport, gameplay rule evaluation, and user-interface behavior. This design is necessary because host/join flow, replicated puzzle state, and menu interactions operate concurrently within the same runtime lifecycle. Clear responsibility boundaries therefore reduce cross-module coupling during iterative development.
 
+\newpage
+
 A server-authoritative model was selected for gameplay-critical state transitions. Puzzle progression, solve validation, die lock state, and terminal flow triggers are committed through server-authoritative logic and then propagated through replicated state containers and RPC events. This avoids conflicting client-side writes and guarantees a single authorized  multiplayer state.
 
 Lifecycle operations were intentionally centralized. Input validation, Relay initialization, transport configuration, scene transition, and shutdown handling are orchestrated by dedicated session/menu components rather than distributed across gameplay scripts. This improves operational predictability and simplifies debugging of create/join/return paths.
@@ -150,13 +161,25 @@ Lifecycle operations were intentionally centralized. Input validation, Relay ini
 Fail-fast initialization checks were also adopted for components with dense serialized dependencies. Early detection of missing references is preferable to silent partial behavior during runtime, and it improves repeatability in both automated and manual validation workflows.
 
 \subsection*{Entity-Component Architecture in Unity}
-The implementation follows Unity's component-based architecture \cite{unity_components_docs}. Runtime entities are represented as \texttt{GameObject} instances, while behavior is composed through attached components (for example, \texttt{PlayerInputHandler}, \texttt{PlayerMovement}, \texttt{PlayerInteractor}, and \texttt{PlayerVisuals} on player objects).
+Entity-component architecture is a composition-oriented design style where runtime objects are defined by what they have (components) rather than what they inherit from (class hierarchies). An \emph{entity} represents identity, while \emph{components} provide independent units of state and behavior that can be attached, removed, and recombined. In strict ECS terminology, systems execute logic over component data; in Unity's object model, this role is typically implemented by component scripts themselves.
 
-This composition strategy was selected to keep responsibilities modular, avoid inheritance-heavy designs, and support iterative prefab-based assembly. Multiplayer-specific behavior is integrated through \texttt{NetworkBehaviour} components for replicated state and authority-aware execution, while non-networked concerns remain in regular \texttt{MonoBehaviour} components \cite{unity_monobehaviour_docs}.
+In Unity, this approach is realized through \texttt{GameObject} instances with attached components \cite{unity_components_docs}. The \texttt{GameObject} acts as the entity container, while scripts derived from \texttt{MonoBehaviour} or \texttt{NetworkBehaviour} represent modular responsibilities. Although this differs from data-oriented ECS frameworks (where components are often pure data), it follows the same design principle: each script owns a single concern, exposes clear inputs/outputs, and avoids hidden cross-module side effects.
 
-The resulting entity-component style is well suited to the thesis scope: explicit runtime composition, maintainable subsystem boundaries, and direct compatibility with the selected Unity Netcode workflow.
+A key advantage of this style is change isolation. In inheritance-heavy designs, introducing new gameplay rules often requires modifying shared base classes, increasing the risk of unintended side effects. In contrast, component-oriented design introduces new behavior through additional or modified components, reducing impact and supporting iterative development.
 
-The resulting architecture prioritizes correctness, observability, and maintainability over feature breadth. This tradeoff is appropriate for the thesis scope and provides a stable base for future extensions. The combination of component-based composition, authoritative state management, and layered module separation enables predictable runtime behavior and supports iterative development.
+In this project, the player runtime object illustrates this decomposition. Instead of a single monolithic script, behavior is distributed across components: input capture (\texttt{PlayerInputHandler}), movement (\texttt{PlayerMovement}), interaction (\texttt{PlayerInteractor}), visual replication (\texttt{PlayerVisuals}), and movement audio (\texttt{PlayerAudio}). This allows each concern to evolve independently while maintaining predictable runtime integration.
+
+The same pattern applies to puzzle behavior. Rule ownership is centralized in \texttt{PuzzleController}, while die-specific interaction and animation are handled by \texttt{DieClickAnimate}. This separation reflects differing requirements: puzzle state must remain authoritative and deterministic, while die presentation can respond immediately to interaction.
+
+Networking concerns are composed rather than embedded globally. Multiplayer-critical state and authority-sensitive logic use \texttt{NetworkBehaviour} and replicated containers, while local UI and presentation remain standard \texttt{MonoBehaviour} concerns \cite{unity_monobehaviour_docs}. This separation prevents network logic from leaking into local modules and clarifies which components may mutate shared state.
+
+Another benefit is prefab-oriented assembly. Entities can be configured by attaching only the required components for a given role (e.g., player, die, or UI element). This improves reuse and maintainability, especially in small-scale projects where rapid iteration is essential.
+
+From a testing perspective, this decomposition improves observability and isolation. Individual components can be tested independently in edit mode, while integration behavior is validated in play mode without requiring full-scene setup. In this project, this supports behavior-focused verification of input handling, options persistence, puzzle progression, and end/recovery flows.
+
+The approach also has tradeoffs. Component architectures can become difficult to reason about when dependencies are implicit or initialization order is unclear. These risks were mitigated through explicit serialized references, startup validation, and fail-fast checks for missing dependencies.
+
+Overall, entity-component architecture is used as an engineering control mechanism, structuring runtime responsibilities into explicit, testable, and replaceable units. The resulting architecture prioritizes correctness, observability, and maintainability over feature breadth, providing a stable foundation for future extensions.
 
 \section{System Modules}
 \begin{figure}[H]
@@ -190,11 +213,11 @@ The dependency direction in Figure~\ref{fig:module-diagram} is intentional and r
 
 This design ensures responsive user interaction, consistent multiplayer behavior, and explicit subsystem boundaries that support maintainability, testing, and future extension.
 
-\subsection*{Module Responsibilities}
-The following subsections describe the main runtime modules and their responsibilities within the system architecture.
+\subsection*{Layer Responsibilities}
+The following subsections describe the main runtime layers and their mapped implementation responsibilities.
 
-\subsection*{Session and Networking Module}
-This module handles menu-triggered session lifecycle from initial input to synchronized scene transition.
+\subsection*{Networking Layer}
+This layer handles session lifecycle and network startup from initial menu input to synchronized scene transition.
 
 \textbf{Main responsibilities:}
 \begin{itemize}
@@ -207,11 +230,12 @@ This module handles menu-triggered session lifecycle from initial input to synch
 
 \textbf{Design rationale:} transport configuration and network startup remain outside gameplay scripts, so puzzle/player components are not coupled to relay allocation details.
 
-\subsection*{Player Module}
-The player module is explicitly decomposed into input capture, movement simulation, world interaction, visual replication, and movement audio.
+\subsection*{Gameplay Layer}
+The gameplay layer is decomposed into player control/interaction and cooperative puzzle rules.
 
 \newpage
 
+\subsubsection*{Player Control and Interaction}
 \textbf{Input and movement details:}
 \begin{itemize}
 \item \texttt{PlayerInputHandler} captures action-map state and gates input by pause/disconnect state.
@@ -228,7 +252,7 @@ The player module is explicitly decomposed into input capture, movement simulati
 \item \texttt{CharacterAnimation} maps movement state to animator parameters and jump trigger.
 \end{itemize}
 
-\subsection*{Puzzle Module}
+\subsubsection*{Cooperative Puzzle Rules}
 Puzzle behavior is implemented by \texttt{PuzzleController} and \texttt{DieClickAnimate}.
 
 \textbf{Puzzle state model:}
@@ -249,23 +273,18 @@ Puzzle behavior is implemented by \texttt{PuzzleController} and \texttt{DieClick
 \item On solve commit, both dice are locked and barrier animation starts.
 \end{itemize}
 
-\textbf{Timing constants in implementation:}
-\begin{itemize}
-\item die roll phase duration: \texttt{0.28s},
-\item solve hold requirement: \texttt{0.82s},
-\item barrier raise duration: \texttt{1.28s},
-\item barrier raise offset: \texttt{4.82} local units.
-\end{itemize}
+\subsection*{Presentation Layer}
+This layer covers menu/session UI surfaces, in-game HUD/feedback presentation, and pause/end/recovery overlays.
 
-\subsection*{UI and Options Module}
-The options subsystem applies changes at runtime and stores them in local persistent storage.
+Options are consumed by explicit runtime targets: display mode and resolution by \texttt{Screen}, quality by \texttt{QualitySettings}, camera FOV/sensitivity by owner \texttt{PlayerMovement} (and its camera), audio levels by configured \texttt{AudioMixer} channels used by menu/gameplay audio, crosshair settings by crosshair UI elements (\texttt{crosshairRect}, \texttt{crosshairGraphic}), and HUD visibility toggles by \texttt{HudStats} widget objects (FPS, ping, and system-clock panels).
 
 \subsubsection*{Display and Camera Settings}
 \begin{table}[H]
 \centering
 \caption{Display and Camera Options}
 \label{tab:display-camera-options}
-\begin{tabular}{|>{\centering\arraybackslash}m{0.2\linewidth}|>{\centering\arraybackslash}m{0.25\linewidth}|>{\centering\arraybackslash}m{0.45\linewidth}|}
+\begin{longtable}{|>{\centering\arraybackslash}m{0.2\linewidth}|>{\centering\arraybackslash}m{0.25\linewidth}|>{\centering\arraybackslash}m{0.45\linewidth}|}
+\hline
 \hline
 \textbf{Setting} & \textbf{Range / Modes} & \textbf{Runtime Behavior} \\
 \hline
@@ -279,15 +298,19 @@ Field of view & 60--100 (default 80) & Applies to owner camera and persists. \\
 \hline
 Sensitivity & 1--100\% (step 1) & Mapped to runtime sensitivity 0.01--1.00 and applied to owner movement. \\
 \hline
-\end{tabular}
+\end{longtable}
+\addtocounter{table}{-1}
 \end{table}
+
+Table~\ref{tab:display-camera-options} summarizes the visual and camera options consumed by runtime engine and owner-control targets: \texttt{Screen} (display mode/resolution), \texttt{QualitySettings} (quality level), and owner \texttt{PlayerMovement} / camera state (FOV and sensitivity).
 
 \subsubsection*{Audio Settings}
 \begin{table}[H]
 \centering
 \caption{Audio Options}
 \label{tab:audio-options}
-\begin{tabular}{|>{\centering\arraybackslash}m{0.25\linewidth}|>{\centering\arraybackslash}m{0.1\linewidth}|>{\centering\arraybackslash}m{0.55\linewidth}|}
+\begin{longtable}{|>{\centering\arraybackslash}m{0.25\linewidth}|>{\centering\arraybackslash}m{0.1\linewidth}|>{\centering\arraybackslash}m{0.55\linewidth}|}
+\hline
 \hline
 \textbf{Setting} & \textbf{Range} & \textbf{Runtime Behavior} \\
 \hline
@@ -301,15 +324,19 @@ Game music volume & 0--100\% & Controls gameplay music channel; can be muted by 
 \hline
 Menu music volume & 0--100\% & Controls menu music channel. \\
 \hline
-\end{tabular}
+\end{longtable}
+\addtocounter{table}{-1}
 \end{table}
+
+Table~\ref{tab:audio-options} summarizes channel-based audio controls mapped to configured \texttt{AudioMixer} parameters, which are then used by gameplay and menu audio playback components.
 
 \subsubsection*{Crosshair and HUD Settings}
 \begin{table}[H]
 \centering
 \caption{Crosshair and HUD Options}
 \label{tab:hud-options}
-\begin{tabular}{|>{\centering\arraybackslash}m{0.25\linewidth}|>{\centering\arraybackslash}m{0.2\linewidth}|>{\centering\arraybackslash}m{0.45\linewidth}|}
+\begin{longtable}{|>{{\centering\arraybackslash}}m{0.25\linewidth}|>{{\centering\arraybackslash}}m{0.2\linewidth}|>{{\centering\arraybackslash}}m{0.45\linewidth}|}
+\hline
 \hline
 \textbf{Setting} & \textbf{Range / States} & \textbf{Runtime Behavior} \\
 \hline
@@ -323,17 +350,28 @@ Show Ping & On / Off & Toggles ping widget visibility. \\
 \hline
 Show System Clock & On / Off & Toggles clock widget visibility. \\
 \hline
-\end{tabular}
+\end{longtable}
+\addtocounter{table}{-1}
 \end{table}
 
-All options are persisted through \texttt{PlayerPrefs} \cite{unity_playerprefs_docs} and reloaded in both main-menu and pause-menu contexts.
+Table~\ref{tab:hud-options} summarizes presentation options consumed by crosshair UI elements (\texttt{crosshairRect}, \texttt{crosshairGraphic}) and HUD widget objects used for FPS, ping, and system-clock visibility.
 
-\subsection*{End and Recovery Module}
+\newpage
+
+\subsubsection*{Pause, End, and Recovery UI}
 End-of-session behavior is split into success and recovery paths.
 \begin{itemize}
 \item \texttt{EndScreen} watches trigger occupancy, broadcasts shared end-state, disables owner controls, and performs a timed fade sequence before showing end UI.
 \item \texttt{ConnectionLost} listens for local disconnect callbacks on the connected client (excluding intentional shutdown and server-side paths) and shows recovery UI when host connection is lost.
 \item Both flows call \texttt{PauseMenu.ForceClose()} to avoid conflicting overlays.
+\end{itemize}
+
+\subsection*{Persistence Layer}
+This layer stores local preferences and session identity values and restores them across scene transitions and restarts.
+\begin{itemize}
+\item \texttt{GameSession} stores player name, selected character, and active join code during runtime.
+\item \texttt{OptionsMenu} saves and reloads display, audio, crosshair, and HUD settings through \texttt{PlayerPrefs} \cite{unity_playerprefs_docs}.
+\item Persisted values are re-applied in both main-menu and pause-menu contexts.
 \end{itemize}
 
 \begin{figure}[H]
@@ -343,8 +381,11 @@ End-of-session behavior is split into success and recovery paths.
 \label{fig:pause-overlay}
 \end{figure}
 
+\subsection*{Unity Platform and Services}
+The implementation depends on Unity runtime and service infrastructure shown in the diagram: Unity Relay for session transport, Unity Authentication Services for identity bootstrap, PlayerPrefs storage for local persistence, and Netcode for GameObjects for replication and ownership control.
+
 \section{Data Structures and State Management}
-The project does not rely on an external relational database. This choice aligns with the scope and requirements of a small-scale multiplayer prototype. State is split into replicated runtime state and local persisted configuration.
+The project does not rely on an external relational database. This choice aligns with the scope and requirements of a small-scale multiplayer vertical slice. State is split into replicated runtime state and local persisted configuration.
 
 \subsection*{Runtime and Networked State}
 \begin{table}[H]
@@ -352,6 +393,7 @@ The project does not rely on an external relational database. This choice aligns
 \caption{Primary Runtime State Containers}
 \label{tab:runtime-state-containers}
 \begin{longtable}{|>{\centering\arraybackslash}m{0.22\linewidth}|>{\centering\arraybackslash}m{0.3\linewidth}|>{\centering\arraybackslash}m{0.38\linewidth}|}
+\hline
 \hline
 \textbf{Container} & \textbf{Type} & \textbf{Purpose} \\
 \hline
@@ -366,16 +408,19 @@ The project does not rely on an external relational database. This choice aligns
 \texttt{netName} in \texttt{PlayerVisuals} & \texttt{NetworkVariable\allowbreak<FixedString64Bytes>} & Replicates normalized player display name. \\
 \hline
 \end{longtable}
+\addtocounter{table}{-1}
 \end{table}
 
-\subsection*{Persistent Local State}
-Persistent values are stored with \texttt{PlayerPrefs} \cite{unity_playerprefs_docs}. Table~\ref{tab:prefs-keys} lists the active keys.
+\newpage
 
+\subsection*{Persistent Local State}
+Persistent values are stored with \texttt{PlayerPrefs} \cite{unity_playerprefs_docs}. Table~\ref{tab:prefs-keys} lists the active keys implemented in the project.
 \begin{table}[H]
 \centering
 \caption{Persistent Preference Keys}
 \label{tab:prefs-keys}
-\begin{tabular}{|>{\centering\arraybackslash}m{0.4\linewidth}|>{\centering\arraybackslash}m{0.08\linewidth}|>{\centering\arraybackslash}m{0.42\linewidth}|}
+\begin{longtable}{|>{\centering\arraybackslash}m{0.4\linewidth}|>{\centering\arraybackslash}m{0.08\linewidth}|>{\centering\arraybackslash}m{0.42\linewidth}|}
+\hline
 \hline
 \textbf{Key} & \textbf{Type} & \textbf{Meaning} \\
 \hline
@@ -409,10 +454,9 @@ Persistent values are stored with \texttt{PlayerPrefs} \cite{unity_playerprefs_d
 \hline
 \texttt{opt\_show\_fps} / \texttt{opt\_show\_ping} / \texttt{opt\_show\_system\_clock} & int & HUD widget visibility flags. \\
 \hline
-\end{tabular}
+\end{longtable}
+\addtocounter{table}{-1}
 \end{table}
-
-The boundary is explicit: multiplayer state is networked, while configuration remains local.
 
 \section{Objects Structure}
 The project is partitioned into script groups by responsibility:
@@ -434,6 +478,7 @@ This approach reduces hidden coupling and improves runtime observability and dia
 
 \section{Physical Structure}
 The repository follows Unity conventions with explicit test separation.
+
 \begin{itemize}
 \item \texttt{Assets/Animations}: animation clips and animator-related assets.
 \item \texttt{Assets/Audio}: audio clips, mixer assets, and sound resources.
@@ -543,6 +588,8 @@ Recovery behavior is verified through both automated and manual validation. play
 \label{fig:class-diagram}
 \end{figure}
 
+\newpage
+
 \subsection*{Class Diagram Description}
 Figure~\ref{fig:class-diagram} presents an MVC-oriented architectural projection with five groups: \textit{Model}, \textit{Controller}, \textit{View}, \textit{UI Components}, and \textit{Service Layer}. Public members are denoted by \texttt{+} and private members by \texttt{-}.
 
@@ -554,7 +601,20 @@ Figure~\ref{fig:class-diagram} presents an MVC-oriented architectural projection
 \item \textbf{Service Layer}: shared audio behavior through \texttt{AudioManager}.
 \end{itemize}
 
+\subsection*{Relationship Explanation}
+Directed dependencies in the diagram indicate explicit usage relations:
+\begin{itemize}
+\item puzzle controller to die animator dependency for target checking and lock control,
+\item relay/menu/session dependencies for host/join lifecycle,
+\item movement/input/interactor dependencies for local-authority control flow,
+\item end/disconnect to shared menu actions for return/exit consistency,
+\item menu, slider, and dropdown UI dependencies on centralized audio service,
+\item character selection and visuals dependency on session identity state.
+\end{itemize}
+
 The dependency direction is intentionally layered: high-level flow controllers orchestrate state transitions; views consume state; reusable services provide cross-cutting behavior.
+
+\newpage
 
 \section{Testing Methodology}
 Testing is implemented with Unity Test Framework \cite{unity_test_framework_docs} in two execution modes.
@@ -583,6 +643,8 @@ To preserve repeatability, tests use explicit cleanup and deterministic scaffold
 \item event-system setup compatible with Input System UI behavior \cite{unity_input_system_docs}.
 \end{itemize}
 
+\newpage
+
 \subsection*{Manual Testing Method}
 Manual testing complements automated tests in scenarios where real-time multiplayer timing, role asymmetry, and user coordination are central to correctness.
 
@@ -601,6 +663,7 @@ Manual testing complements automated tests in scenarios where real-time multipla
 \label{tab:manual-test-criteria}
 \begin{longtable}{|>{\centering\arraybackslash}m{0.3\linewidth}|>{\centering\arraybackslash}m{0.6\linewidth}|}
 \hline
+\hline
 \textbf{Criterion} & \textbf{Pass Condition} \\
 \hline
 Session establishment & Client joins host session successfully and both players load into gameplay. \\
@@ -614,7 +677,10 @@ UI transition correctness & Pause/end/disconnect overlays appear only in valid s
 Recovery behavior & Disconnect and return-to-menu flows complete without stale network state in the next run. \\
 \hline
 \end{longtable}
+\addtocounter{table}{-1}
 \end{table}
+
+\newpage
 
 \section{Test Results}
 At the current development snapshot, the automated suite contains \textbf{90 tests}: \textbf{30 edit mode} and \textbf{60 play mode}.
@@ -624,6 +690,7 @@ At the current development snapshot, the automated suite contains \textbf{90 tes
 \caption{Automated Test Files and Focus Areas}
 \label{tab:test-files}
 \begin{longtable}{|>{\centering\arraybackslash}m{0.35\linewidth}|>{\centering\arraybackslash}m{0.1\linewidth}|>{\centering\arraybackslash}m{0.1\linewidth}|>{\centering\arraybackslash}m{0.35\linewidth}|}
+\hline
 \hline
 \textbf{Test file} & \textbf{Mode} & \textbf{Count} & \textbf{Primary focus} \\
 \hline
@@ -646,6 +713,7 @@ At the current development snapshot, the automated suite contains \textbf{90 tes
 \texttt{PuzzlePlayTests} & Play & 10 & Die rolling/lock logic, puzzle regeneration, solve-related structures, end flow \\
 \hline
 \end{longtable}
+\addtocounter{table}{-1}
 \end{table}
 
 \newpage
@@ -658,6 +726,7 @@ In addition to automated tests, manual host/client runs were executed to validat
 \caption{Manual Multi-Client Validation Scenarios}
 \label{tab:manual-validation}
 \begin{longtable}{|>{\centering\arraybackslash}m{0.2\linewidth}|>{\centering\arraybackslash}m{0.35\linewidth}|>{\centering\arraybackslash}m{0.35\linewidth}|}
+\hline
 \hline
 \textbf{Scenario} & \textbf{Expected Outcome} & \textbf{Observed Result} \\
 \hline
@@ -674,6 +743,7 @@ Victory transition & End screen shown to all participants & Passed, owner contro
 Host disconnect before victory & Connection-lost screen shown on client & Passed, dedicated recovery flow triggered \\
 \hline
 \end{longtable}
+\addtocounter{table}{-1}
 \end{table}
 
 Overall, the verification results confirm that the implemented architecture is stable for the targeted two-player scope and that critical runtime branches are covered by repeatable automated and manual checks.
