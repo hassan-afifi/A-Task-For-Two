@@ -1,6 +1,10 @@
 # A Task For Two
 
-![Unity](https://img.shields.io/badge/Unity-6000_LTS-black?logo=unity)
+<p align="center">
+  <img width="650" height="400" alt="LogoTex" src="https://github.com/user-attachments/assets/c24fdfc8-3713-4785-af7e-7d261dea33e1" />
+</p>
+
+![Unity](https://img.shields.io/badge/Unity-6000.3_LTS-black?logo=unity)
 ![C#](https://img.shields.io/badge/C%23-.NET-purple?logo=csharp)
 ![License](https://img.shields.io/badge/License-CC_BY--NC--ND_4.0-blue)
 
@@ -155,9 +159,9 @@ Open the project using **Unity 6 (6000.3 LTS)**.
 
 # Download
 
-A pre-built Windows version is available under **Releases**.
+**Windows Build**
 
-Download the latest version here:
+Download the latest playable version from the Releases page.
 
 https://github.com/hassan-afifi/A_Task_For_Two/releases/latest
 
@@ -186,4 +190,6 @@ ProjectSettings/
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the **Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License**.
+
+https://creativecommons.org/licenses/by-nc-nd/4.0/
