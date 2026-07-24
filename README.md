@@ -1,8 +1,12 @@
 # A Task For Two
 
+![Unity](https://img.shields.io/badge/Unity-6000_LTS-black?logo=unity)
+![C#](https://img.shields.io/badge/C%23-.NET-purple?logo=csharp)
+![License](https://img.shields.io/badge/License-CC_BY--NC--ND_4.0-blue)
+
 A Task For Two is an online cooperative multiplayer puzzle game developed in **Unity** as my Bachelor's thesis project.
 
-The project implements a complete multiplayer gameplay vertical slice where two players must communicate and cooperate to solve an asymmetric puzzle in a synchronized online environment. It focuses on multiplayer networking, software architecture, real-time synchronization, automated testing, and the delivery of a polished player experience.
+The project implements a polished multiplayer gameplay vertical slice in which two players communicate and cooperate to solve an asymmetric puzzle in a synchronized online environment. It focuses on multiplayer networking, software architecture, real-time synchronization, automated testing, and the delivery of a polished player experience.
 
 [![Download for Windows](https://img.shields.io/badge/Download-Windows-blue?style=for-the-badge&logo=windows)](../../releases/latest)
 
