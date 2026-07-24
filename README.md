@@ -1,48 +1,185 @@
 # A Task For Two
 
-## Project Setup
+A Task For Two is an online cooperative multiplayer puzzle game developed in **Unity** as my Bachelor's thesis project.
 
-### 1. Install required tools
-- Unity Hub
-- Unity Editor `6000.3.10f1`
+The project implements a complete multiplayer gameplay vertical slice where two players must communicate and cooperate to solve an asymmetric puzzle in a synchronized online environment. It focuses on multiplayer networking, software architecture, real-time synchronization, automated testing, and the delivery of a polished player experience.
+
+[![Download for Windows](https://img.shields.io/badge/Download-Windows-blue?style=for-the-badge&logo=windows)](../../releases/latest)
+
+---
+
+## Overview
+
+This project demonstrates the design and implementation of a complete online cooperative gameplay vertical slice.
+
+Players create or join a multiplayer session using Unity Relay and Unity Lobby, solve an asymmetric cooperative puzzle by exchanging information in real time, and complete a shared objective. Alongside the gameplay, the project includes a modular architecture, persistent settings, automated testing, and robust multiplayer session handling.
+
+---
+
+## Features
+
+- Online cooperative multiplayer gameplay
+- Unity Relay & Lobby integration
+- Host and join-by-code sessions
+- Real-time synchronized gameplay
+- Asymmetric cooperative puzzle
+- Shared victory flow
+- Host disconnect recovery
+- Extensive video, audio, and HUD settings
+- Persistent player preferences
+- Automated Edit Mode and Play Mode testing
+
+---
+
+## Technologies
+
+| Category | Technologies |
+|-----------|--------------|
+| Language | C# |
+| Engine | Unity 6 (6000.3 LTS) |
+| Multiplayer | Unity Netcode for GameObjects |
+| Networking Services | Unity Relay, Unity Lobby |
+| UI | Unity UI Toolkit, TextMeshPro |
+| Version Control | Git, Git LFS |
+| Development | Visual Studio Code |
+
+---
+
+## Software Engineering
+
+This project applies modern software engineering practices, including:
+
+- Modular object-oriented architecture
+- Multiplayer state synchronization
+- Event-driven programming
+- Automated Edit Mode and Play Mode testing
+- Version control with Git
+- Separation of gameplay, networking, and UI systems
+- Persistent data management
+- Clean project organization
+
+---
+
+# Screenshots
+
+## Main Menu
+
+<img width="1920" height="1080" alt="MainMenu" src="https://github.com/user-attachments/assets/89cc7d0b-e21c-419f-a8a1-e009fc7ae73a" />
+
+---
+
+## Multiplayer Lobby
+
+Players can create private multiplayer sessions and invite another player using a generated lobby code.
+
+<img width="1920" height="1080" alt="SecondPlayer" src="https://github.com/user-attachments/assets/6e081f21-4883-49f8-b302-eb41ebab3b1a" />
+
+---
+
+## Gameplay
+
+Players explore the environment together while communicating to solve a synchronized cooperative puzzle.
+
+<img width="1920" height="1080" alt="GameView" src="https://github.com/user-attachments/assets/e5c43758-5d25-4f31-b70c-f718097e9b12" />
+
+---
+
+## Cooperative Puzzle
+
+Each player sees only part of the puzzle. Communication is required because each player controls the value needed to complete their partner's equation.
+
+<img width="1920" height="1080" alt="PuzzleA" src="https://github.com/user-attachments/assets/5db71e22-8346-4700-ab4e-8cf0fb9c52a8" />
+
+---
+
+## Audio Settings
+
+Customize separate volume levels for music, gameplay sound effects, and menu audio.
+
+<img width="1920" height="1080" alt="AudioOptionsMenu" src="https://github.com/user-attachments/assets/a06a40ed-a394-49d7-b030-ec1f77ca64fd" />
+
+---
+
+## HUD Settings
+
+Customize crosshair appearance, FPS and ping counters, and the in-game system clock.
+
+<img width="1920" height="1080" alt="HudOptionsMenu" src="https://github.com/user-attachments/assets/37b4f8cd-f779-4f7f-95d1-a68c66ad0787" />
+
+---
+
+## Pause Menu
+
+Pause gameplay at any time while maintaining multiplayer session state.
+
+<img width="1920" height="1080" alt="PauseMenu" src="https://github.com/user-attachments/assets/c2ab45b5-7e7c-42bd-b2f7-495e790ab135" />
+
+---
+
+## Victory Screen
+
+Complete the cooperative puzzle to finish the level.
+
+<img width="1920" height="1080" alt="EndScreen" src="https://github.com/user-attachments/assets/8b5e724f-b77d-4533-825e-659806995003" />
+
+---
+
+## Getting Started
+
+### Requirements
+
+- Unity 6 (6000.3 LTS)
 - Git
 - Git LFS
-- Visual Studio Code `1.111.0`
 
-### 2. Unity editor version and build targets
-- Required Unity editor version: `6000.3.10f1`
-- No additional modules installed
-- Windows standalone build support is available by default on this Windows editor install
+### Clone the repository
 
-If you want to build for a specific platform, open Unity Hub -> Installs -> gear icon on `6000.3.10f1` -> Add modules, then install the target you need.
-
-### 3. Clone the repository
-
-HTTPS:
 ```bash
 git clone https://github.com/hassan-afifi/A_Task_For_Two.git
 ```
 
-SSH:
-```bash
-git clone git@github.com:hassan-afifi/A_Task_For_Two.git
-```
+Enable Git LFS
 
-Then enter the project folder:
-```bash
-cd A_Task_For_Two
-```
-
-### 4. Enable Git LFS (required)
-Run:
 ```bash
 git lfs install
 git lfs pull
 ```
 
-### 5. Open the project in Unity Hub
-1. Open Unity Hub.
-2. Click **Add**.
-3. Click **Add project from disk**.
-4. Select the cloned `A_Task_For_Two` folder.
-5. Open it with Unity editor version `6000.3.10f1`.
+Open the project using **Unity 6 (6000.3 LTS)**.
+
+---
+
+# Download
+
+A pre-built Windows version is available under **Releases**.
+
+Download the latest version here:
+
+https://github.com/hassan-afifi/A_Task_For_Two/releases/latest
+
+---
+
+## Repository Structure
+
+```
+Assets/
+├── Animations/
+├── Audio/
+├── Materials/
+├── Models/
+├── Prefabs/
+├── Scenes/
+├── Scripts/
+├── Settings/
+├── Tests/
+└── Textures/
+
+Packages/
+ProjectSettings/
+```
+
+---
+
+## License
+
+This project is licensed under the MIT License.
