@@ -2,6 +2,7 @@
 
 <p align="center">
   <img width="650" height="400" alt="LogoTex" src="https://github.com/user-attachments/assets/c24fdfc8-3713-4785-af7e-7d261dea33e1" />
+  [![Download for Windows](https://img.shields.io/badge/Download-Windows-blue?style=for-the-badge&logo=windows)](../../releases/latest)
 </p>
 
 ![Unity](https://img.shields.io/badge/Unity-6000.3_LTS-black?logo=unity)
@@ -12,7 +13,6 @@ A Task For Two is an online cooperative multiplayer puzzle game developed in **U
 
 The project implements a polished multiplayer gameplay vertical slice in which two players communicate and cooperate to solve an asymmetric puzzle in a synchronized online environment. It focuses on multiplayer networking, software architecture, real-time synchronization, automated testing, and the delivery of a polished player experience.
 
-[![Download for Windows](https://img.shields.io/badge/Download-Windows-blue?style=for-the-badge&logo=windows)](../../releases/latest)
 
 ---
 
