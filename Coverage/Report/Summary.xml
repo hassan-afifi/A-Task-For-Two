@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CoverageReport scope="Summary">
+  <Summary>
+    <Generatedon>2026. 04. 19. - 17:22:19</Generatedon>
+    <Parser>MultiReportParser (2x OpenCoverParser)</Parser>
+    <Assemblies>1</Assemblies>
+    <Classes>26</Classes>
+    <Files>25</Files>
+    <Coveredlines>1704</Coveredlines>
+    <Uncoveredlines>2217</Uncoveredlines>
+    <Coverablelines>3921</Coverablelines>
+    <Totallines>8453</Totallines>
+    <Linecoverage>43.4</Linecoverage>
+    <Coveredbranches>0</Coveredbranches>
+    <Totalbranches>0</Totalbranches>
+    <Coveredmethods>275</Coveredmethods>
+    <Totalmethods>495</Totalmethods>
+    <Methodcoverage>55.5</Methodcoverage>
+  </Summary>
+  <Coverage>
+    <Assembly name="ATaskForTwo" classes="26" coverage="43.4" coveredlines="1704" coverablelines="3921" totallines="8722" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="275" totalmethods="495" methodcoverage="55.5">
+      <Class name="AnimatedToggle" coverage="37.5" coveredlines="15" coverablelines="40" totallines="87" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="3" totalmethods="9" methodcoverage="33.3" />
+      <Class name="AudioManager" coverage="85.2" coveredlines="29" coverablelines="34" totallines="69" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="7" totalmethods="7" methodcoverage="100" />
+      <Class name="CharacterAnimation" coverage="0" coveredlines="0" coverablelines="35" totallines="87" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="0" totalmethods="5" methodcoverage="0" />
+      <Class name="CharacterSelection" coverage="52.6" coveredlines="140" coverablelines="266" totallines="401" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="15" totalmethods="19" methodcoverage="78.9" />
+      <Class name="ConnectionLost" coverage="13" coveredlines="12" coverablelines="92" totallines="167" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="3" totalmethods="13" methodcoverage="23" />
+      <Class name="DieClickAnimate" coverage="75.1" coveredlines="112" coverablelines="149" totallines="289" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="18" totalmethods="23" methodcoverage="78.2" />
+      <Class name="DropdownHelper" coverage="0" coveredlines="0" coverablelines="99" totallines="167" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="0" totalmethods="7" methodcoverage="0" />
+      <Class name="DropHoverSfx" coverage="100" coveredlines="3" coverablelines="3" totallines="269" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="1" totalmethods="1" methodcoverage="100" />
+      <Class name="EndScreen" coverage="4.1" coveredlines="7" coverablelines="170" totallines="283" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="3" totalmethods="18" methodcoverage="16.6" />
+      <Class name="GameSession" coverage="78" coveredlines="39" coverablelines="50" totallines="109" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="10" totalmethods="13" methodcoverage="76.9" />
+      <Class name="GenderToggle" coverage="76.6" coveredlines="69" coverablelines="90" totallines="184" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="12" totalmethods="14" methodcoverage="85.7" />
+      <Class name="HudStats" coverage="0" coveredlines="0" coverablelines="117" totallines="217" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="0" totalmethods="10" methodcoverage="0" />
+      <Class name="InputActions" coverage="20.8" coveredlines="61" coverablelines="292" totallines="1975" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="22" totalmethods="74" methodcoverage="29.7" />
+      <Class name="MainMenu" coverage="65.6" coveredlines="113" coverablelines="172" totallines="303" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="17" totalmethods="20" methodcoverage="85" />
+      <Class name="MenuActions" coverage="50" coveredlines="12" coverablelines="24" totallines="57" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="3" totalmethods="4" methodcoverage="75" />
+      <Class name="MenuSfx" coverage="48.3" coveredlines="73" coverablelines="151" totallines="269" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="9" totalmethods="15" methodcoverage="60" />
+      <Class name="OptionsMenu" coverage="76.5" coveredlines="496" coverablelines="648" totallines="1148" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="71" totalmethods="73" methodcoverage="97.2" />
+      <Class name="PauseMenu" coverage="67.6" coveredlines="159" coverablelines="235" totallines="399" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="23" totalmethods="26" methodcoverage="88.4" />
+      <Class name="PlayerAudio" coverage="20.4" coveredlines="43" coverablelines="210" totallines="368" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="6" totalmethods="19" methodcoverage="31.5" />
+      <Class name="PlayerInputHandler" coverage="43.4" coveredlines="63" coverablelines="145" totallines="256" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="9" totalmethods="23" methodcoverage="39.1" />
+      <Class name="PlayerInteractor" coverage="0" coveredlines="0" coverablelines="25" totallines="56" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="0" totalmethods="2" methodcoverage="0" />
+      <Class name="PlayerMovement" coverage="27.5" coveredlines="44" coverablelines="160" totallines="268" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="8" totalmethods="17" methodcoverage="47" />
+      <Class name="PlayerVisuals" coverage="46.1" coveredlines="90" coverablelines="195" totallines="345" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="12" totalmethods="23" methodcoverage="52.1" />
+      <Class name="PuzzleController" coverage="41.2" coveredlines="101" coverablelines="245" totallines="473" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="18" totalmethods="31" methodcoverage="58" />
+      <Class name="RelayManager" coverage="17" coveredlines="21" coverablelines="123" totallines="211" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="4" totalmethods="8" methodcoverage="50" />
+      <Class name="SliderHelper" coverage="1.3" coveredlines="2" coverablelines="151" totallines="265" branchcoverage="" coveredbranches="0" totalbranches="0" coveredmethods="1" totalmethods="21" methodcoverage="4.7" />
+    </Assembly>
+  </Coverage>
+</CoverageReport>

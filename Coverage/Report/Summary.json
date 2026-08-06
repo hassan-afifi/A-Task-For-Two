@@ -1,0 +1,49 @@
+{
+  "summary": {
+    "generatedon": "2026-04-19T15:22:19Z",
+    "parser": "MultiReportParser (2x OpenCoverParser)",
+    "assemblies": 1,
+    "classes": 26,
+    "files": 25,
+    "coveredlines": 1704,
+    "uncoveredlines": 2217,
+    "coverablelines": 3921,
+    "totallines": 8453,
+    "linecoverage": 43.4,
+    "coveredbranches": 0,
+    "totalbranches": 0,
+    "coveredmethods": 275,
+    "totalmethods": 495,
+    "methodcoverage": 55.5
+ },
+  "coverage": {
+    "assemblies": [
+      { "name": "ATaskForTwo", "classes": 26, "coverage": 43.4, "coveredlines": 1704, "coverablelines": 3921, "totallines": 8722, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 55.5, "coveredmethods": 275, "totalmethods": 495, "classesinassembly": [
+        { "name": "AnimatedToggle", "coverage": 37.5, "coveredlines": 15, "coverablelines": 40, "totallines": 87, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 33.3, "coveredmethods": 3, "totalmethods": 9 },
+        { "name": "AudioManager", "coverage": 85.2, "coveredlines": 29, "coverablelines": 34, "totallines": 69, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 100, "coveredmethods": 7, "totalmethods": 7 },
+        { "name": "CharacterAnimation", "coverage": 0, "coveredlines": 0, "coverablelines": 35, "totallines": 87, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 0, "coveredmethods": 0, "totalmethods": 5 },
+        { "name": "CharacterSelection", "coverage": 52.6, "coveredlines": 140, "coverablelines": 266, "totallines": 401, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 78.9, "coveredmethods": 15, "totalmethods": 19 },
+        { "name": "ConnectionLost", "coverage": 13, "coveredlines": 12, "coverablelines": 92, "totallines": 167, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 23, "coveredmethods": 3, "totalmethods": 13 },
+        { "name": "DieClickAnimate", "coverage": 75.1, "coveredlines": 112, "coverablelines": 149, "totallines": 289, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 78.2, "coveredmethods": 18, "totalmethods": 23 },
+        { "name": "DropdownHelper", "coverage": 0, "coveredlines": 0, "coverablelines": 99, "totallines": 167, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 0, "coveredmethods": 0, "totalmethods": 7 },
+        { "name": "DropHoverSfx", "coverage": 100, "coveredlines": 3, "coverablelines": 3, "totallines": 269, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 100, "coveredmethods": 1, "totalmethods": 1 },
+        { "name": "EndScreen", "coverage": 4.1, "coveredlines": 7, "coverablelines": 170, "totallines": 283, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 16.6, "coveredmethods": 3, "totalmethods": 18 },
+        { "name": "GameSession", "coverage": 78, "coveredlines": 39, "coverablelines": 50, "totallines": 109, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 76.9, "coveredmethods": 10, "totalmethods": 13 },
+        { "name": "GenderToggle", "coverage": 76.6, "coveredlines": 69, "coverablelines": 90, "totallines": 184, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 85.7, "coveredmethods": 12, "totalmethods": 14 },
+        { "name": "HudStats", "coverage": 0, "coveredlines": 0, "coverablelines": 117, "totallines": 217, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 0, "coveredmethods": 0, "totalmethods": 10 },
+        { "name": "InputActions", "coverage": 20.8, "coveredlines": 61, "coverablelines": 292, "totallines": 1975, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 29.7, "coveredmethods": 22, "totalmethods": 74 },
+        { "name": "MainMenu", "coverage": 65.6, "coveredlines": 113, "coverablelines": 172, "totallines": 303, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 85, "coveredmethods": 17, "totalmethods": 20 },
+        { "name": "MenuActions", "coverage": 50, "coveredlines": 12, "coverablelines": 24, "totallines": 57, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 75, "coveredmethods": 3, "totalmethods": 4 },
+        { "name": "MenuSfx", "coverage": 48.3, "coveredlines": 73, "coverablelines": 151, "totallines": 269, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 60, "coveredmethods": 9, "totalmethods": 15 },
+        { "name": "OptionsMenu", "coverage": 76.5, "coveredlines": 496, "coverablelines": 648, "totallines": 1148, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 97.2, "coveredmethods": 71, "totalmethods": 73 },
+        { "name": "PauseMenu", "coverage": 67.6, "coveredlines": 159, "coverablelines": 235, "totallines": 399, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 88.4, "coveredmethods": 23, "totalmethods": 26 },
+        { "name": "PlayerAudio", "coverage": 20.4, "coveredlines": 43, "coverablelines": 210, "totallines": 368, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 31.5, "coveredmethods": 6, "totalmethods": 19 },
+        { "name": "PlayerInputHandler", "coverage": 43.4, "coveredlines": 63, "coverablelines": 145, "totallines": 256, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 39.1, "coveredmethods": 9, "totalmethods": 23 },
+        { "name": "PlayerInteractor", "coverage": 0, "coveredlines": 0, "coverablelines": 25, "totallines": 56, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 0, "coveredmethods": 0, "totalmethods": 2 },
+        { "name": "PlayerMovement", "coverage": 27.5, "coveredlines": 44, "coverablelines": 160, "totallines": 268, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 47, "coveredmethods": 8, "totalmethods": 17 },
+        { "name": "PlayerVisuals", "coverage": 46.1, "coveredlines": 90, "coverablelines": 195, "totallines": 345, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 52.1, "coveredmethods": 12, "totalmethods": 23 },
+        { "name": "PuzzleController", "coverage": 41.2, "coveredlines": 101, "coverablelines": 245, "totallines": 473, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 58, "coveredmethods": 18, "totalmethods": 31 },
+        { "name": "RelayManager", "coverage": 17, "coveredlines": 21, "coverablelines": 123, "totallines": 211, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 50, "coveredmethods": 4, "totalmethods": 8 },
+        { "name": "SliderHelper", "coverage": 1.3, "coveredlines": 2, "coverablelines": 151, "totallines": 265, "branchcoverage": null, "coveredbranches": 0, "totalbranches": 0, "methodcoverage": 4.7, "coveredmethods": 1, "totalmethods": 21 } ] } ]
+  }
+}
