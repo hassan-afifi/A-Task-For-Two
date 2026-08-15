@@ -103,7 +103,7 @@ Each player sees only part of the puzzle. Communication is required because each
 
 ## Video Settings
 
-Customize display mode and resolution, graphics quality, and camera FOV and sensitivity.
+Customize display options, graphics quality, and camera settings.
 
 <img width="1920" height="1080" alt="VideoOptionsMenu" src="https://github.com/user-attachments/assets/7372c3dd-0b82-4fb3-b395-335cb83d2cbd" />
 
